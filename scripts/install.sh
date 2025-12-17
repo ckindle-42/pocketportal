@@ -1,11 +1,11 @@
 #!/bin/bash
-# Telegram AI Agent v3.1 - Complete Installation Script
+# PocketPortal 4.1 - Complete Installation Script
 # Installs everything needed for a fresh deployment
 
 set -e  # Exit on error
 
 echo "========================================================================"
-echo "🤖 Telegram AI Agent v3.1 - Installation"
+echo "🤖 PocketPortal 4.1 - Installation"
 echo "========================================================================"
 echo ""
 
@@ -114,19 +114,18 @@ echo ""
 echo "📦 Upgrading pip..."
 pip install --upgrade pip
 
-# Install core dependencies
+# Install dependencies
 echo ""
-echo "📦 Installing core dependencies..."
-pip install -r requirements_core.txt
+echo "❓ Install with all features? (MCP, Git, Docker, OCR, etc.)"
+read -p "   This adds ~500MB of packages [Y/n]: " install_all
 
-# Ask about addon dependencies
-echo ""
-echo "❓ Install addon dependencies? (MCP, Git, Docker, OCR, etc.)"
-read -p "   This adds ~500MB of packages [y/N]: " install_addons
+if [[ $install_all =~ ^[Nn]$ ]]; then
+    echo "📦 Installing core dependencies..."
+    pip install -e .
+    echo "✅ Core dependencies installed"
+else
+    echo "📦 Installing all dependencies..."
 
-if [[ $install_addons =~ ^[Yy]$ ]]; then
-    echo "📦 Installing addon dependencies..."
-    
     # Install Node.js for MCP (if not present)
     if ! command_exists node; then
         echo "📦 Installing Node.js (required for MCP)..."
@@ -137,7 +136,7 @@ if [[ $install_addons =~ ^[Yy]$ ]]; then
             sudo apt-get install -y nodejs
         fi
     fi
-    
+
     # Install Tesseract for PDF OCR (if not present)
     if ! command_exists tesseract; then
         echo "📦 Installing Tesseract (required for PDF OCR)..."
@@ -147,11 +146,9 @@ if [[ $install_addons =~ ^[Yy]$ ]]; then
             sudo apt-get install -y tesseract-ocr
         fi
     fi
-    
-    pip install -r requirements_with_addons.txt
-    echo "✅ Addon dependencies installed"
-else
-    echo "⏭️  Skipping addon dependencies"
+
+    pip install -e ".[all]"
+    echo "✅ All dependencies installed"
 fi
 
 # Install Playwright browsers (for web automation)
@@ -194,11 +191,11 @@ echo "========================================================================"
 echo ""
 echo "📋 What was installed:"
 echo "   ✅ Python virtual environment"
-echo "   ✅ All Python dependencies"
+echo "   ✅ PocketPortal package"
 echo "   ✅ Ollama LLM runtime"
 echo "   ✅ Default model (qwen2.5:7b)"
-if [[ $install_addons =~ ^[Yy]$ ]]; then
-    echo "   ✅ Addon dependencies (MCP, Git, Docker, etc.)"
+if [[ ! $install_all =~ ^[Nn]$ ]]; then
+    echo "   ✅ All features (MCP, Git, Docker, etc.)"
 fi
 echo ""
 echo "🎯 Next Steps:"
@@ -206,13 +203,13 @@ echo "   1. Get Telegram bot token from @BotFather"
 echo "   2. Edit .env file and add your bot token"
 echo "   3. Add your Telegram user ID to .env"
 echo "   4. Run: source venv/bin/activate"
-echo "   5. Run: python telegram_agent_v3.py"
+echo "   5. Run: pocketportal start --interface telegram"
 echo "   6. Message your bot on Telegram!"
 echo ""
 echo "📖 Documentation:"
 echo "   - README.md - Overview"
-echo "   - INSTALLATION.md - Quick guide"
-echo "   - docs/DEPLOYMENT_GUIDE_MASTER_V3.1.md - Complete guide"
+echo "   - docs/setup.md - Installation guide"
+echo "   - docs/architecture.md - Architecture documentation"
 echo ""
 echo "🆘 Need help? Check docs/TROUBLESHOOTING.md"
 echo ""

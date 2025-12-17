@@ -3,18 +3,18 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.telegram.agent</string>
-    
+    <string>com.pocketportal.agent</string>
+
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>cd ~/telegram_agent_v3 &amp;&amp; source venv/bin/activate &amp;&amp; python telegram_agent_v3.py</string>
+        <string>cd ~/pocketportal &amp;&amp; source venv/bin/activate &amp;&amp; pocketportal start --interface telegram</string>
     </array>
-    
+
     <key>RunAtLoad</key>
     <true/>
-    
+
     <key>KeepAlive</key>
     <dict>
         <key>SuccessfulExit</key>
@@ -22,18 +22,18 @@
         <key>Crashed</key>
         <true/>
     </dict>
-    
+
     <key>ThrottleInterval</key>
     <integer>30</integer>
-    
+
     <key>WorkingDirectory</key>
-    <string>~/telegram_agent_v3</string>
-    
+    <string>~/pocketportal</string>
+
     <key>StandardOutPath</key>
-    <string>~/telegram_agent_v3/logs/launchd.log</string>
-    
+    <string>~/pocketportal/logs/launchd.log</string>
+
     <key>StandardErrorPath</key>
-    <string>~/telegram_agent_v3/logs/launchd_error.log</string>
+    <string>~/pocketportal/logs/launchd_error.log</string>
     
     <key>EnvironmentVariables</key>
     <dict>

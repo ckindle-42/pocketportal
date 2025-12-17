@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# Telegram AI Agent v3.1 - Automated Setup
+# PocketPortal 4.1 - Automated Setup
 # =============================================================================
 
 set -e
@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║        Telegram AI Agent v3.1 - Setup                      ║${NC}"
+echo -e "${BLUE}║        PocketPortal 4.1 - Setup                            ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -48,7 +48,7 @@ echo -e "${GREEN}✓ pip upgraded${NC}"
 
 # Install dependencies
 echo -e "${YELLOW}[4/8] Installing dependencies...${NC}"
-pip install -r requirements.txt -q
+pip install -e ".[all]" -q
 echo -e "${GREEN}✓ Dependencies installed${NC}"
 
 # Install Playwright browsers
@@ -100,11 +100,11 @@ echo -e "${GREEN}Next steps:${NC}"
 echo -e "  1. Edit .env with your Telegram credentials"
 echo -e "  2. Ensure Ollama is running: ${BLUE}ollama serve${NC}"
 echo -e "  3. Pull a model: ${BLUE}ollama pull qwen2.5:7b${NC}"
-echo -e "  4. Start the agent: ${BLUE}source venv/bin/activate && python telegram_agent_v3.py${NC}"
+echo -e "  4. Start the agent: ${BLUE}source venv/bin/activate && pocketportal start --interface telegram${NC}"
 echo ""
 echo -e "${GREEN}Optional - Auto-start on boot (macOS):${NC}"
-echo -e "  ${BLUE}cp com.telegram.agent.plist ~/Library/LaunchAgents/${NC}"
-echo -e "  ${BLUE}launchctl load ~/Library/LaunchAgents/com.telegram.agent.plist${NC}"
+echo -e "  ${BLUE}cp scripts/launch_agents/com_telegram_agent.plist ~/Library/LaunchAgents/${NC}"
+echo -e "  ${BLUE}launchctl load ~/Library/LaunchAgents/com_telegram_agent.plist${NC}"
 echo ""
 echo -e "${GREEN}Verify installation:${NC}"
-echo -e "  ${BLUE}python verify_system.py${NC}"
+echo -e "  ${BLUE}python scripts/verify_installation.py${NC}"

@@ -73,4 +73,15 @@ __all__ = [
     'SecurityConfig',
     'PocketPortalConfig',
     'load_config',
+    # New Pydantic-based settings (recommended)
+    'Settings',
+    'load_settings',
 ]
+
+# Import new Pydantic settings
+try:
+    from .settings import Settings, load_settings
+except ImportError:
+    # Fallback if pydantic-settings not installed
+    Settings = None
+    load_settings = None

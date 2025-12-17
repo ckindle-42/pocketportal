@@ -35,20 +35,24 @@ pip install -e .
 pip install -e ".[all]"
 
 # Run Telegram interface
-python -m pocketportal.interfaces.telegram_interface
+pocketportal start --interface telegram
 
-# Or create your own interface
-from pocketportal.core import create_agent_core, SecurityMiddleware
-agent_core = create_agent_core(config)
-secure_core = SecurityMiddleware(agent_core)
+# Or run all interfaces
+pocketportal start --all
+
+# Validate your configuration
+pocketportal validate-config
+
+# List available tools
+pocketportal list-tools
 ```
 
 ### Documentation
 
-📖 **Architecture Guide**: [`STRUCTURE.md`](STRUCTURE.md)
-🔄 **Migration from 3.x**: [`MIGRATION_TO_4.0.md`](MIGRATION_TO_4.0.md)
-🔧 **Installation Guide**: [`INSTALLATION.md`](INSTALLATION.md)
-🔒 **Security Enhancements**: [`SECURITY_FIXES.md`](SECURITY_FIXES.md)
+📖 **Architecture Guide**: [`docs/architecture.md`](docs/architecture.md)
+🔄 **Migration from 3.x**: [`docs/archive/MIGRATION_TO_4.0.md`](docs/archive/MIGRATION_TO_4.0.md)
+🔧 **Installation Guide**: [`docs/setup.md`](docs/setup.md)
+🔒 **Security Enhancements**: [`docs/security/SECURITY_FIXES.md`](docs/security/SECURITY_FIXES.md)
 
 ---
 
@@ -75,11 +79,18 @@ pocketportal/
 │
 ├── tests/                         # Test suite
 ├── scripts/                       # Setup & utility scripts
+│   ├── install.sh                # Complete installation script
+│   ├── setup.sh                  # Quick setup script
+│   └── deployment/               # Platform-specific deployment configs
+│       ├── macos/                # macOS LaunchAgent
+│       └── linux/                # Linux systemd service
 ├── docs/                          # Documentation
-├── archive/                       # Legacy v3.x code & docs (reference only)
+│   ├── architecture.md           # Architecture documentation
+│   ├── setup.md                  # Installation guide
+│   ├── security/                 # Security documentation
+│   ├── reports/                  # Verification reports
+│   └── archive/                  # Legacy migration guides
 ├── pyproject.toml                 # Modern Python package config
-├── STRUCTURE.md                   # Architecture documentation
-├── MIGRATION_TO_4.0.md           # Migration guide
 └── README.md                      # This file
 ```
 
@@ -98,22 +109,37 @@ pocketportal/
 
 ## 🎯 Success Criteria
 
-Your 4.0 deployment succeeds when:
-- ✅ Agent responds via Telegram
+Your 4.1 deployment succeeds when:
+- ✅ Agent responds via Telegram or Web interface
 - ✅ Multiple interfaces work simultaneously
 - ✅ Context shared across interfaces
 - ✅ Events fire correctly
 - ✅ Rate limiting functions
+- ✅ Configuration validation passes
 - ✅ No errors in logs
+
+## 🆕 What's New in 4.1
+
+### Operational Excellence
+- **Pydantic Settings**: Type-safe configuration with validation at startup
+- **BaseInterface ABC**: Standardized interface contract for consistency
+- **Dynamic Tool Discovery**: Auto-detect tools without manual registration
+- **Unified CLI**: Single `pocketportal` command for all operations
+- **Deployment Configs**: Ready-to-use systemd and launchd configurations
+
+### Cleaner Structure
+- Consolidated documentation in `docs/` directory
+- Platform-specific deployment scripts organized by OS
+- Updated installation scripts using modern `pyproject.toml`
+- Removed legacy v3.x artifacts and version conflicts
 
 ---
 
 ## 📚 Legacy v3.x
 
-Previous versions of PocketPortal (v3.x) used a monolithic architecture. All v3.x code and documentation has been moved to the `archive/` directory for reference.
+Previous versions of PocketPortal (v3.x) used a monolithic architecture. Migration documentation has been moved to the `docs/archive/` directory for reference.
 
-**For v3.x documentation**: See [`archive/v3_docs/`](archive/v3_docs/)
-**To migrate to 4.0**: See [`MIGRATION_TO_4.0.md`](MIGRATION_TO_4.0.md)
+**To migrate to 4.1**: See [`docs/archive/MIGRATION_TO_4.0.md`](docs/archive/MIGRATION_TO_4.0.md)
 
 ---
 
