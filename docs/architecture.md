@@ -1,8 +1,8 @@
-# PocketPortal 4.0 - Project Structure
+# PocketPortal 4.1 - Project Structure
 
 ## Overview
 
-PocketPortal 4.0 has been completely restructured for operational excellence, maintainability, and true modularity. The entire codebase is now contained within a single, self-contained Python package.
+PocketPortal 4.1 has been completely restructured for operational excellence, maintainability, and true modularity. The entire codebase is now contained within a single, self-contained Python package.
 
 ## Directory Structure
 
@@ -87,10 +87,11 @@ pocketportal/                       # Repository root
 │
 ├── pyproject.toml               # Modern Python packaging
 ├── README.md                    # Main documentation
-└── STRUCTURE.md                 # This file
+└── docs/                        # Documentation files
+    └── architecture.md          # This file
 ```
 
-## Key Improvements in 4.0
+## Key Improvements in 4.1
 
 ### 1. **Self-Contained Package**
 - Everything lives inside `pocketportal/`
@@ -152,7 +153,7 @@ from telegram_agent_tools import registry
 from security.security_module import RateLimiter
 ```
 
-### New (4.0)
+### New (4.1)
 ```python
 from pocketportal.routing import IntelligentRouter
 from pocketportal.tools import registry
