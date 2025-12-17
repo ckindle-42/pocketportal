@@ -10,7 +10,7 @@ import logging
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 
-from security.security_module import InputSanitizer, RateLimiter
+from pocketportal.security.security_module import InputSanitizer, RateLimiter
 from .exceptions import PolicyViolationError, RateLimitError, ValidationError
 from .structured_logger import get_logger
 

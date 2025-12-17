@@ -1,23 +1,24 @@
-# 🚀 PocketPortal 4.3.0 - One-for-All AI Agent Platform
+# 🚀 PocketPortal 4.4.0 - One-for-All AI Agent Platform
 
-**Privacy-First, Interface-Agnostic AI Agent with Plugin Ecosystem**
+**Privacy-First, Interface-Agnostic AI Agent with Async Queue, Protocol Mesh, and Full Observability**
 
 ---
 
-## 🎉 PocketPortal 4.3.0 - Plugin-Ready Production Platform
+## 🎉 PocketPortal 4.4.0 - Production-Ready Enterprise Platform
 
-**PocketPortal 4.3.0** is a production-ready, extensible AI agent platform with a **plugin ecosystem**, **observability**, and **universal resource access** that makes it truly interface-agnostic.
+**PocketPortal 4.4.0** is a production-ready, extensible AI agent platform with **async job queues**, **bidirectional MCP support**, **universal resource resolution**, and **full observability** that makes it truly interface-agnostic and production-grade.
 
-### Evolution from 3.x to 4.3.0
+### Evolution from 3.x to 4.4.0
 
 ```
 v3.x:  Telegram Bot → [Monolithic Logic]
 v4.0:  Any Interface → Security → AgentCore → Router → LLM
 v4.2:  + DAO Pattern + Dynamic Discovery + Lazy Loading
 v4.3:  + Plugin Ecosystem + Observability + Testing Infrastructure
+v4.4:  + Async Job Queue + MCP Protocol Mesh + Full Observability Stack
 ```
 
-**Core Improvements (4.0-4.3):**
+**Core Improvements (4.0-4.4):**
 - ✅ **Modular Architecture**: Add Web/Slack/Discord/API interfaces easily
 - ✅ **Dependency Injection**: Fully testable without loading LLMs
 - ✅ **Structured Errors**: Custom exceptions instead of string returns
@@ -28,7 +29,11 @@ v4.3:  + Plugin Ecosystem + Observability + Testing Infrastructure
 - ✅ **Externalized Prompts**: Change prompts without redeploying
 - ✅ **DAO Pattern**: Swappable persistence backends (SQLite → PostgreSQL/Redis)
 - ✅ **Plugin Architecture**: Third-party tools via entry points
-- ✅ **Observability**: OpenTelemetry tracing & Prometheus metrics
+- ✅ **Async Job Queue**: Background processing with priority queue, retries, and worker pools
+- ✅ **MCP Protocol Mesh**: Bidirectional MCP support (client + server)
+- ✅ **Universal Resources**: Unified access to file://, http://, mcp://, db:// resources
+- ✅ **Full Observability**: OpenTelemetry tracing, Prometheus metrics, health probes
+- ✅ **Config Hot-Reload**: Zero-downtime configuration updates
 - ✅ **Testing Infrastructure**: Organized test markers (unit, integration, slow)
 
 ### Quick Start
@@ -125,29 +130,45 @@ Your 4.1 deployment succeeds when:
 - ✅ Configuration validation passes
 - ✅ No errors in logs
 
-## 🆕 What's New in 4.3
+## 🆕 What's New in 4.4
 
-### Plugin Ecosystem
-- **Entry Points Discovery**: Third-party tools installable via `pip install pocketportal-tool-X`
-- **Automatic Registration**: Plugins discovered on startup via `importlib.metadata`
-- **Plugin Development Guide**: Complete guide at [`docs/PLUGIN_DEVELOPMENT.md`](docs/PLUGIN_DEVELOPMENT.md)
-- **Backwards Compatible**: All existing internal tools continue to work
+### Phase 2: Async Job Queue
+- **Priority Job Queue**: Background processing with LOW/NORMAL/HIGH/CRITICAL priorities
+- **Worker Pool**: Concurrent job processing with configurable worker count
+- **Auto Retry**: Automatic retry on failure with exponential backoff
+- **Event Integration**: Real-time job status updates via event bus
+- **Stale Job Recovery**: Automatic detection and requeuing of stuck jobs
+- **Swappable Backends**: DAO pattern supports SQLite, Redis, PostgreSQL
 
-### Observability & Monitoring
-- **OpenTelemetry Support**: Distributed tracing with OTLP exporters
-- **Prometheus Metrics**: Production-grade metrics collection
-- **FastAPI Instrumentation**: Automatic HTTP request/response tracing
-- **Foundation for Production**: Ready for Grafana, Jaeger, and monitoring dashboards
+### Phase 3: MCP Protocol Elevation
+- **Bidirectional MCP**: Run as both MCP client AND server
+- **Protocol Mesh**: Connect PocketPortal ↔ Claude Desktop ↔ Other MCP apps
+- **Universal Resources**: Unified API for file://, http://, mcp://, db:// resources
+- **Resource Providers**: Pluggable providers for different resource types
+- **Batch Resolution**: Resolve multiple resources in parallel
+- **CLI Server**: `pocketportal mcp-server` to expose tools via MCP
 
-### Testing Infrastructure
-- **pytest Markers**: Organized test categories (`unit`, `integration`, `slow`, `requires_llm`, `requires_docker`)
-- **Faster CI/CD**: Run only fast unit tests or skip slow integration tests
-- **Better Organization**: Clear separation of test types
+### Phase 4: Full Observability Stack
+- **OpenTelemetry Tracing**: Distributed tracing with Jaeger/Tempo integration
+- **Prometheus Metrics**: Production-grade metrics at `/metrics` endpoint
+  - HTTP request counters and duration histograms
+  - Job queue metrics (pending, running, completed)
+  - Worker pool metrics (total, busy, idle)
+  - LLM request metrics (tokens, duration, model)
+  - Error counters by type and component
+- **Kubernetes Health Probes**:
+  - `/health/live` - Liveness probe
+  - `/health/ready` - Readiness probe
+  - `/health` - Full health check
+- **Config Hot-Reload**: Zero-downtime configuration updates
+  - Watch YAML/JSON/TOML config files
+  - Automatic validation and rollback
+  - Callback system for config changes
 
-### Documentation Consolidation
-- **Single Source of Truth**: Merged root docs into `docs/` directory
-- **Strategic Planning**: Added comprehensive roadmap at [`docs/STRATEGIC_PLAN_V4.3.md`](docs/STRATEGIC_PLAN_V4.3.md)
-- **No Version Drift**: Consistent versioning across all files
+### Previous: 4.3 Features
+- **Plugin Ecosystem**: Third-party tools via entry points
+- **Testing Infrastructure**: pytest markers for organized test execution
+- **Documentation**: Consolidated docs and strategic planning
 
 ---
 
@@ -187,8 +208,8 @@ Previous versions of PocketPortal (v3.x) used a monolithic architecture. Migrati
 
 ---
 
-**Version:** 4.3.0
+**Version:** 4.4.0
 **Release Date:** December 2025
 **License:** MIT
 
-**Built with ❤️ for privacy, modularity, extensibility, and control**
+**Built with ❤️ for privacy, modularity, extensibility, production-readiness, and control**
