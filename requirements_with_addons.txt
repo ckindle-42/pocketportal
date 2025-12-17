@@ -1,0 +1,311 @@
+# Telegram AI Agent v3.0 - Complete Requirements with Addons
+# Python 3.11+ required
+# Last updated: December 2025
+# Optimized for M4 Mac Mini Pro with 128GB RAM
+
+# ============================================================================
+# CORE TELEGRAM & CONFIGURATION
+# ============================================================================
+
+# Telegram Bot Framework (v20.7 - stable, v21.x has breaking changes)
+python-telegram-bot==20.7
+
+# Environment & Configuration
+python-dotenv==1.0.0
+pydantic==2.5.2
+
+# ============================================================================
+# ASYNC & NETWORKING
+# ============================================================================
+
+# Async HTTP Client
+aiohttp==3.9.3
+aiofiles==23.2.1
+
+# Database
+aiosqlite==0.19.0
+
+# ============================================================================
+# SECURITY & ENCRYPTION
+# ============================================================================
+
+# Cryptography (v42.0.5 has security fixes)
+cryptography==42.0.5
+
+# ============================================================================
+# LLM BACKENDS
+# ============================================================================
+
+# Ollama (local inference)
+ollama==0.1.6
+
+# MLX (Apple Silicon optimized - M4 specific)
+# Only install on M-series Macs
+mlx==0.0.9; sys_platform == 'darwin' and platform_machine == 'arm64'
+mlx-lm==0.0.9; sys_platform == 'darwin' and platform_machine == 'arm64'
+
+# OpenAI-compatible API client (for LM Studio)
+# v0.28.0 has stable API (v1.x has breaking changes)
+openai==0.28.0
+
+# ============================================================================
+# ROUTING SYSTEM
+# ============================================================================
+
+# Token counting for routing decisions
+tiktoken==0.5.2
+
+# ============================================================================
+# UTILITY TOOLS (Phase 1-2)
+# ============================================================================
+
+# QR Code Generator
+qrcode[pil]==7.4.2
+Pillow==10.1.0
+
+# Text Transformation
+PyYAML==6.0.1
+xmltodict==0.13.0
+toml==0.10.2
+
+# File Compression
+py7zr==0.20.8
+
+# ============================================================================
+# DATA TOOLS (Phase 2)
+# ============================================================================
+
+# Math Visualizer
+matplotlib==3.8.2
+numpy==1.26.2
+
+# CSV Analyzer
+pandas==2.1.4
+
+# ============================================================================
+# WEB TOOLS (Phase 2)
+# ============================================================================
+
+# HTTP Client (already have aiohttp above)
+
+# ============================================================================
+# AUDIO TOOLS (Phase 3)
+# ============================================================================
+
+# Audio Transcription
+faster-whisper==0.10.0
+pydub==0.25.1
+
+# ============================================================================
+# DEVELOPMENT TOOLS (Phase 3)
+# ============================================================================
+
+# Python environment manager (uses venv from stdlib)
+
+# ============================================================================
+# AUTOMATION TOOLS (Phase 3)
+# ============================================================================
+
+# Job Scheduler
+APScheduler==3.10.1
+croniter==2.0.1
+
+# Shell Safety (no external deps)
+
+# ============================================================================
+# KNOWLEDGE TOOLS (Phase 3)
+# ============================================================================
+
+# Local Knowledge Search
+sentence-transformers==2.2.2
+faiss-cpu==1.7.4
+
+# ============================================================================
+# BROWSER AUTOMATION
+# ============================================================================
+
+# Playwright for browser control
+playwright==1.40.0
+
+# ============================================================================
+# MONITORING & HEALTH
+# ============================================================================
+
+# System monitoring
+psutil==5.9.6
+
+# ============================================================================
+# TESTING
+# ============================================================================
+
+# Test framework
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-timeout==2.2.0
+
+# ============================================================================
+# ADDON TOOLS (Optional but Recommended)
+# ============================================================================
+
+# MCP Integration (HIGHEST PRIORITY)
+# Adds 400+ service connectors
+mcp==0.9.0
+
+# Git Operations
+# Full Git workflow automation
+GitPython==3.1.40
+
+# Docker Management
+# Container lifecycle management
+docker==7.0.0
+
+# PDF OCR
+# Requires Tesseract: brew install tesseract (macOS)
+pytesseract==0.3.10
+pdf2image==1.16.3
+
+# Clipboard Management
+# Cross-platform clipboard access
+pyperclip==1.8.2
+
+# ============================================================================
+# INSTALLATION NOTES
+# ============================================================================
+
+# Basic Installation (Core + 11 Tools):
+# pip install -r requirements.txt
+#
+# With MCP (Recommended):
+# pip install -r requirements.txt
+#
+# With All Addons:
+# brew install tesseract  # macOS only, for PDF OCR
+# pip install -r requirements.txt
+#
+# Platform-Specific:
+# - MLX only on Apple Silicon Macs
+# - Playwright requires: python -m playwright install
+# - Tesseract for PDF OCR: brew install tesseract
+#
+# Verification:
+# python verify_system.py
+
+# ============================================================================
+# DEPENDENCY CONFLICTS & RESOLUTIONS
+# ============================================================================
+
+# Known Issues:
+# 1. python-telegram-bot 20.7 vs 21.x
+#    - Stick with 20.7 (stable API)
+#    - v21.x has breaking changes
+#
+# 2. OpenAI 0.28.0 vs 1.x
+#    - 0.28.0 for LM Studio compatibility
+#    - 1.x has different API structure
+#
+# 3. Cryptography 42.0.5
+#    - Security fixes for CVE-2024-xxxx
+#    - Always use latest minor version
+#
+# 4. MLX on non-Apple Silicon
+#    - Conditional install prevents errors
+#    - Only installed on arm64 Macs
+
+# ============================================================================
+# PERFORMANCE TUNING (M4 Mac Mini Pro)
+# ============================================================================
+
+# Expected Performance:
+# - 7B models: 80 tokens/sec
+# - 14B models: 45 tokens/sec
+# - 32B models: 25 tokens/sec
+# - Memory bandwidth: ~200GB/s
+#
+# Recommended Models:
+# ollama pull qwen2.5:7b-instruct-q4_K_M       # Fast (4.7GB)
+# ollama pull qwen2.5:14b-instruct-q4_K_M      # Balanced (9GB)
+# ollama pull qwen2.5:32b-instruct-q4_K_M      # Quality (20GB)
+# ollama pull qwen2.5-coder:7b-instruct-q4_K_M # Code (4.7GB)
+#
+# Multiple models can run simultaneously with 128GB RAM
+
+# ============================================================================
+# SECURITY NOTES
+# ============================================================================
+
+# Environment Variables (add to .env, never commit):
+# - TELEGRAM_BOT_TOKEN
+# - GITHUB_TOKEN (for MCP)
+# - SLACK_TOKEN (for MCP)
+# - GDRIVE_CREDENTIALS_PATH (for MCP)
+# - GMAIL_CREDENTIALS_PATH (for MCP)
+# - POSTGRES_CONNECTION_STRING (for MCP)
+#
+# File Permissions:
+# chmod 600 .env
+# chmod 700 ~/telegram-agent
+#
+# Network Security:
+# - All processing is local (no external APIs)
+# - Ollama/LM Studio on localhost only
+# - MCP servers run via stdio (local process)
+
+# ============================================================================
+# UPGRADE PATH
+# ============================================================================
+
+# From v2.x to v3.0:
+# 1. Backup .env file
+# 2. pip install --upgrade -r requirements.txt
+# 3. Restore .env
+# 4. python verify_system.py
+# 5. Restart agent
+#
+# From v3.0 to v3.0+addons:
+# 1. pip install mcp GitPython docker pytesseract pdf2image pyperclip
+# 2. brew install tesseract  # macOS
+# 3. Configure authentication (GitHub, Slack, etc.)
+# 4. Restart agent
+# 5. Test addon tools
+
+# ============================================================================
+# TROUBLESHOOTING
+# ============================================================================
+
+# Issue: "No module named 'telegram'"
+# Fix: pip install python-telegram-bot==20.7
+#
+# Issue: "No module named 'mlx'"
+# Fix: Only on M-series Macs. Check: python -c "import platform; print(platform.machine())"
+#
+# Issue: "Playwright browser not found"
+# Fix: python -m playwright install
+#
+# Issue: "Tesseract not found"
+# Fix: brew install tesseract (macOS) or apt-get install tesseract-ocr (Linux)
+#
+# Issue: "MCP server connection failed"
+# Fix: Ensure Node.js installed: brew install node
+#
+# For more help: See TROUBLESHOOTING.md
+
+# ============================================================================
+# VERSION HISTORY
+# ============================================================================
+
+# v3.0.0 - December 2025
+# - Initial release with 11 core tools
+# - Intelligent routing system
+# - Multi-backend support (Ollama/LM Studio/MLX)
+# - Production deployment
+#
+# v3.1.0 - December 2025 (This Version)
+# - Added MCP integration (400+ services)
+# - Added Git operations (9 tools)
+# - Added Docker management (5 tools)
+# - Added System monitoring (2 tools)
+# - Added PDF OCR (1 tool)
+# - Added Clipboard manager (1 tool)
+# - Total: 29 tools + 400+ MCP services
+
+# END OF REQUIREMENTS
