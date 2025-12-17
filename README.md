@@ -1,8 +1,61 @@
-# 🤖 Telegram AI Agent v3.1 - Complete Deployment Bundle
+# 🚀 PocketPortal 4.0 - Truly Modular AI Agent Platform
+
+**Privacy-First, Interface-Agnostic AI Agent**
+
+---
+
+## 🎉 NEW: PocketPortal 4.0 - The Modular Refactor
+
+**PocketPortal 4.0** is here! A complete architectural refactor that makes the core **truly interface-agnostic**.
+
+### What's Different in 4.0?
+
+```
+Before (3.x):  Telegram Bot → [Monolithic Logic]
+After (4.0):   Any Interface → Security → AgentCore → Router → LLM
+```
+
+**Key Improvements:**
+- ✅ **Modular Architecture**: Add Web/Slack/Discord/API interfaces easily
+- ✅ **Dependency Injection**: Fully testable without loading LLMs
+- ✅ **Structured Errors**: Custom exceptions instead of string returns
+- ✅ **SQLite Rate Limiting**: No more JSON race conditions
+- ✅ **Context Management**: Shared conversation history across all interfaces
+- ✅ **Event Bus**: Real-time feedback (show spinners, progress indicators)
+- ✅ **Structured Logging**: JSON logs with trace IDs for debugging
+- ✅ **Externalized Prompts**: Change prompts without redeploying
+
+### Quick Start (4.0)
+
+```bash
+# Install dependencies
+pip install -r requirements_core.txt
+
+# Run Telegram interface (new architecture)
+python pocketportal_unified/interfaces/telegram_interface.py
+
+# Or create your own interface
+from pocketportal_unified.core import create_agent_core, SecurityMiddleware
+agent_core = create_agent_core(config)
+secure_core = SecurityMiddleware(agent_core)
+```
+
+📖 **Full 4.0 Documentation**: `pocketportal_unified/README_4.0.md`
+🔄 **Migration Guide**: `MIGRATION_TO_4.0.md`
+
+### Still Using 3.x?
+
+No problem! The 3.x architecture still works and is maintained for backwards compatibility. See below for 3.x documentation.
+
+---
+
+## 🤖 Legacy: Telegram AI Agent v3.1
 
 **Privacy-First, Fully Local AI Agent for Telegram**
 
 This is a **complete, ready-to-deploy** package containing everything needed to run a production-grade Telegram AI agent on your own hardware.
+
+> **Note:** If you're starting fresh, we recommend using **4.0** (see above). If you're upgrading from 3.x, see the migration guide.
 
 ---
 
