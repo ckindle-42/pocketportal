@@ -1,0 +1,86 @@
+# ============================================================================
+# PocketPortal Unified - Complete Dependencies
+# ============================================================================
+
+# Core Python
+python-telegram-bot==20.7
+python-dotenv==1.0.0
+pydantic==2.5.2
+aiohttp==3.9.1
+cryptography==41.0.7
+aiosqlite==0.19.0
+
+# Web Interface (NEW)
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+websockets==12.0
+
+# LLM Backends
+ollama==0.1.6
+
+# Async file operations
+aiofiles==23.2.1
+
+# Tool Dependencies
+# ------------------
+
+# Utility Tools
+qrcode[pil]==7.4.2
+pillow==10.1.0
+pyyaml==6.0.1
+toml==0.10.2
+
+# Data Tools
+pandas==2.1.4
+numpy==1.26.2
+matplotlib==3.8.2
+py7zr==0.20.8
+
+# Web Tools
+requests==2.31.0
+beautifulsoup4==4.12.2
+lxml==4.9.4
+
+# Audio Tools
+openai-whisper==20231117
+faster-whisper==0.10.0
+
+# Automation Tools
+schedule==1.2.0
+apscheduler==3.10.4
+
+# Knowledge Tools
+sentence-transformers==2.2.2
+scikit-learn==1.3.2
+
+# Development Tools
+playwright==1.40.0
+
+# Security (already included in core)
+# cryptography==41.0.7
+
+# Optional: Browser automation
+# Uncomment if using browser tools
+# playwright-stealth==1.0.0
+
+# Optional: Additional formats
+# Uncomment if needed
+# openpyxl==3.1.2  # Excel support
+# python-docx==1.1.0  # Word docs
+
+# ============================================================================
+# Installation Notes
+# ============================================================================
+#
+# Basic installation:
+#   pip install -r requirements.txt
+#
+# With browser tools (requires extra setup):
+#   pip install -r requirements.txt
+#   playwright install chromium
+#
+# For faster Whisper (requires system dependencies):
+#   # macOS: brew install ffmpeg
+#   # Ubuntu: sudo apt-get install ffmpeg
+#
+# ============================================================================
