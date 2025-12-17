@@ -153,10 +153,12 @@ class LocalKnowledgeTool(BaseTool):
                 # Use stored embedding (much faster than recalculating!)
                 doc_emb = np.array(doc['embedding'])
 
-                # Calculate cosine similarity
-                score = np.dot(doc_emb, query_embedding) / (
-                    np.linalg.norm(doc_emb) * np.linalg.norm(query_embedding)
-                )
+                # Calculate cosine similarity with safety check for zero vectors
+                norm_product = np.linalg.norm(doc_emb) * np.linalg.norm(query_embedding)
+                if norm_product == 0:
+                    score = 0.0
+                else:
+                    score = np.dot(doc_emb, query_embedding) / norm_product
 
                 results.append({
                     "source": doc.get('source', 'unknown'),

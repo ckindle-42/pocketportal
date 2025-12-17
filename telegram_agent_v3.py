@@ -43,6 +43,10 @@ from telegram.ext import (
 
 # Configuration
 from dotenv import load_dotenv
+from config_validator import load_and_validate_config
+
+# Security module
+from security.security_module import RateLimiter, InputSanitizer
 
 # Routing system
 from routing import (
@@ -75,36 +79,35 @@ class TelegramAgent:
     
     def __init__(self):
         """Initialize the agent"""
-        
-        # Load environment variables
-        load_dotenv()
-        
-        # Configuration
-        self.bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
-        self.authorized_user_id = int(os.getenv('TELEGRAM_USER_ID', 0))
-        
-        if not self.bot_token or not self.authorized_user_id:
-            raise ValueError("Missing TELEGRAM_BOT_TOKEN or TELEGRAM_USER_ID in .env")
+
+        # Load and validate configuration
+        self.config = load_and_validate_config()
+        if not self.config:
+            raise ValueError("Invalid configuration - please fix .env file")
+
+        # Extract frequently used config values
+        self.bot_token = self.config.telegram_bot_token
+        self.authorized_user_id = self.config.telegram_user_id
         
         # Initialize routing system
         logger.info("Initializing routing system...")
         self.model_registry = ModelRegistry()
-        
-        # Get routing strategy from env
-        strategy_name = os.getenv('ROUTING_STRATEGY', 'auto').upper()
+
+        # Get routing strategy from config
+        strategy_name = self.config.routing_strategy.upper()
         self.routing_strategy = getattr(RoutingStrategy, strategy_name, RoutingStrategy.AUTO)
-        
+
         self.router = IntelligentRouter(
             self.model_registry,
             strategy=self.routing_strategy
         )
-        
-        # Backend configuration
+
+        # Backend configuration from validated config
         config = {
-            'ollama_base_url': os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434'),
-            'lmstudio_base_url': os.getenv('LMSTUDIO_BASE_URL', 'http://localhost:1234/v1'),
-            'mlx_model_path': os.getenv('MLX_MODEL_PATH'),
-            'max_parallel_tools': int(os.getenv('MAX_PARALLEL_TOOLS', 3)),
+            'ollama_base_url': self.config.ollama_base_url,
+            'lmstudio_base_url': self.config.lmstudio_base_url,
+            'mlx_model_path': self.config.mlx_model_path,
+            'max_parallel_tools': self.config.max_parallel_tools,
         }
         
         self.execution_engine = ExecutionEngine(
@@ -117,7 +120,15 @@ class TelegramAgent:
         logger.info("Loading tools...")
         loaded, failed = tool_registry.discover_and_load()
         logger.info(f"Tool registry: {loaded} loaded, {failed} failed")
-        
+
+        # Initialize security module from validated config
+        logger.info("Initializing security module...")
+        self.rate_limiter = RateLimiter(
+            max_requests=self.config.rate_limit_messages,
+            window_seconds=self.config.rate_limit_window
+        )
+        self.input_sanitizer = InputSanitizer()
+
         # Telegram application
         self.application = None
 
@@ -352,11 +363,17 @@ Everything runs locally - no data leaves your machine!"""
     
     async def handle_text_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle text messages"""
-        
+
         if not self._is_authorized(update):
-            await update.message.reply_text("â›” Unauthorized")
+            await update.message.reply_text("â›" Unauthorized")
             return
-        
+
+        # Check rate limiting
+        allowed, error_msg = self.rate_limiter.check_limit(update.effective_user.id)
+        if not allowed:
+            await update.message.reply_text(error_msg)
+            return
+
         user_message = update.message.text
         logger.info(f"Processing text message: {user_message[:50]}...")
         
@@ -373,9 +390,9 @@ Everything runs locally - no data leaves your machine!"""
             if result.success:
                 # Format response
                 response = result.response
-                
-                # Add routing info if verbose mode
-                if os.getenv('VERBOSE_ROUTING', 'false').lower() == 'true':
+
+                # Add routing info if verbose mode enabled in config
+                if self.config.verbose_routing:
                     response += f"\n\n_Model: {result.model_id} ({result.execution_time:.2f}s)_"
                 
                 await update.message.reply_text(response, parse_mode='Markdown')
