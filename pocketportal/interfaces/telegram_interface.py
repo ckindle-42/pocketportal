@@ -1,20 +1,22 @@
 """
-Telegram Interface - Adapter for AgentCore
-==========================================
+Telegram Interface - Passive Adapter for AgentCore
+====================================================
 
-This is a thin adapter that connects Telegram to the unified AgentCore.
-All the AI logic lives in the core - this just handles Telegram-specific stuff.
+This is a PASSIVE ADAPTER that connects Telegram to the unified AgentCore.
+It relies on Dependency Injection - all dependencies are passed in, not created.
 
 Architecture:
-    Telegram Updates → TelegramInterface → AgentCore → Response → Telegram
+    CLI → AgentCore (injected) → TelegramInterface (adapter) → Telegram Bot
+
+Key Principle: This interface is a "dumb" adapter, not a factory.
+It does NOT create its own AgentCore or load configuration.
+All dependencies are injected via the constructor.
 """
 
 import asyncio
 import logging
-import os
-import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -27,114 +29,131 @@ from telegram.ext import (
 )
 from telegram.constants import ChatAction
 
-# Import the unified core
-from pocketportal.core import create_agent_core, ProcessingResult, EventBus
+# Import types
+from pocketportal.core import ProcessingResult
 
 # Import confirmation middleware
 from pocketportal.middleware import ToolConfirmationMiddleware, ConfirmationRequest
 
-# Import existing config and security
-from pocketportal.config.validator import load_and_validate_config
+# Import security module
 from pocketportal.security.security_module import RateLimiter
 
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+if TYPE_CHECKING:
+    from pocketportal.core import AgentCoreV2
+    from pocketportal.config.settings import Settings
+
 logger = logging.getLogger(__name__)
 
 
 class TelegramInterface:
     """
-    Telegram Bot Interface using AgentCore
-    
-    This class handles all Telegram-specific concerns:
-    - Authorization
-    - Rate limiting  
-    - Message formatting
-    - Media handling
-    
-    The actual AI processing is delegated to AgentCore.
-    """
-    
-    def __init__(self):
-        """Initialize Telegram interface"""
-        
-        logger.info("=" * 60)
-        logger.info("Initializing Telegram Interface")
-        logger.info("=" * 60)
-        
-        # Load and validate configuration
-        self.config = load_and_validate_config()
-        if not self.config:
-            raise ValueError("Invalid configuration - please fix .env file")
-        
-        # Telegram-specific config
-        self.bot_token = self.config.telegram_bot_token
-        self.authorized_user_id = self.config.telegram_user_id
-        
-        # Initialize rate limiter
-        self.rate_limiter = RateLimiter(
-            max_requests=self.config.rate_limit_messages,
-            window_seconds=self.config.rate_limit_window
-        )
-        
-        # Build core configuration
-        core_config = {
-            'ollama_base_url': self.config.ollama_base_url,
-            'lmstudio_base_url': self.config.lmstudio_base_url,
-            'routing_strategy': self.config.routing_strategy,
-            'model_preferences': {
-                'trivial': [m.strip() for m in self.config.model_pref_trivial.split(',') if m.strip()],
-                'simple': [m.strip() for m in self.config.model_pref_simple.split(',') if m.strip()],
-                'moderate': [m.strip() for m in self.config.model_pref_moderate.split(',') if m.strip()],
-                'complex': [m.strip() for m in self.config.model_pref_complex.split(',') if m.strip()],
-                'expert': [m.strip() for m in self.config.model_pref_expert.split(',') if m.strip()],
-                'code': [m.strip() for m in self.config.model_pref_code.split(',') if m.strip()]
-            }
-        }
+    Telegram Bot Interface - Passive Adapter Pattern
 
-        # Initialize the unified core using factory function
-        logger.info("Initializing AgentCore...")
-        self.agent_core = create_agent_core(core_config)
+    This class handles ONLY Telegram-specific concerns:
+    - Authorization (checking user IDs)
+    - Rate limiting (per-user throttling)
+    - Message formatting (Markdown, chunking)
+    - Telegram Bot API interaction
+
+    The actual AI processing is delegated to the INJECTED AgentCore.
+    This interface does NOT create its own core or load configuration.
+
+    Dependencies (injected via constructor):
+    - agent_core: Pre-configured AgentCore instance
+    - settings: Application settings (for telegram, security, tools config)
+    """
+
+    def __init__(self, agent_core: 'AgentCoreV2', settings: 'Settings'):
+        """
+        Initialize Telegram interface with injected dependencies
+
+        Args:
+            agent_core: Pre-configured AgentCore instance (already wrapped in SecurityMiddleware by CLI)
+            settings: Application settings object (Pydantic Settings)
+
+        Raises:
+            ValueError: If telegram config is missing or invalid
+        """
+
+        logger.info("=" * 60)
+        logger.info("Initializing Telegram Interface (Passive Adapter)")
+        logger.info("=" * 60)
+
+        # Store injected dependencies
+        self.agent_core = agent_core
+        self.settings = settings
+
+        # Validate telegram configuration
+        if not settings.interfaces.telegram:
+            raise ValueError("Telegram interface configuration missing in settings")
+
+        telegram_config = settings.interfaces.telegram
+
+        # Telegram-specific config
+        self.bot_token = telegram_config.bot_token
+
+        # Support legacy single user ID or new list of allowed user IDs
+        if telegram_config.allowed_user_ids:
+            self.authorized_user_ids = set(telegram_config.allowed_user_ids)
+        else:
+            # Fallback: try to get from environment (backward compatibility)
+            import os
+            user_id_str = os.getenv('TELEGRAM_USER_ID')
+            if user_id_str:
+                self.authorized_user_ids = {int(user_id_str)}
+            else:
+                raise ValueError("No authorized user IDs configured. Set allowed_user_ids in config.")
+
+        # Initialize rate limiter from security config
+        security_config = settings.security
+        self.rate_limiter = RateLimiter(
+            max_requests=security_config.max_requests_per_minute,
+            window_seconds=60  # 1 minute window
+        )
 
         # Initialize confirmation middleware if enabled
         self.confirmation_middleware = None
-        self.admin_chat_id = self.config.tools_admin_chat_id or self.config.telegram_user_id
 
-        if self.config.tools_require_confirmation:
+        # Check if tools require confirmation (use security config)
+        if security_config.require_approval_for_high_risk:
             logger.info("Initializing Tool Confirmation Middleware...")
-            self.confirmation_middleware = ToolConfirmationMiddleware(
-                event_bus=self.agent_core.event_bus,
-                confirmation_sender=self._send_confirmation_request,
-                default_timeout=self.config.tools_confirmation_timeout
-            )
 
-            # Inject middleware into agent core
-            self.agent_core.confirmation_middleware = self.confirmation_middleware
+            # Admin chat ID is the first authorized user
+            self.admin_chat_id = list(self.authorized_user_ids)[0] if self.authorized_user_ids else None
 
-            logger.info(
-                f"Confirmation middleware enabled (admin_chat_id: {self.admin_chat_id}, "
-                f"timeout: {self.config.tools_confirmation_timeout}s)"
-            )
+            if not self.admin_chat_id:
+                logger.warning("Cannot enable confirmation middleware: no authorized users configured")
+            else:
+                self.confirmation_middleware = ToolConfirmationMiddleware(
+                    event_bus=self.agent_core.event_bus,
+                    confirmation_sender=self._send_confirmation_request,
+                    default_timeout=300  # 5 minutes default
+                )
+
+                # Inject middleware into agent core
+                self.agent_core.confirmation_middleware = self.confirmation_middleware
+
+                logger.info(
+                    f"Confirmation middleware enabled (admin_chat_id: {self.admin_chat_id})"
+                )
 
         # Telegram application
         self.application = None
-        
+
         logger.info("=" * 60)
         logger.info("Telegram Interface ready!")
         logger.info(f"  Bot token: {self.bot_token[:20]}...")
-        logger.info(f"  Authorized user: {self.authorized_user_id}")
+        logger.info(f"  Authorized users: {len(self.authorized_user_ids)}")
+        logger.info(f"  Dependency Injection: ✓")
         logger.info("=" * 60)
     
     # ========================================================================
     # AUTHORIZATION & SECURITY
     # ========================================================================
-    
+
     def _is_authorized(self, update: Update) -> bool:
         """Check if user is authorized"""
-        return update.effective_user.id == self.authorized_user_id
+        return update.effective_user.id in self.authorized_user_ids
     
     def _check_rate_limit(self, user_id: int) -> tuple[bool, Optional[str]]:
         """Check rate limiting"""
@@ -447,9 +466,13 @@ class TelegramInterface:
             
             # Format response for Telegram
             response_text = result.response
-            
+
             # Add footer with model info if verbose mode
-            if self.config.verbose_routing:
+            # (verbose_routing would be in logging config or a future feature flag)
+            verbose_routing = getattr(self.settings.logging, 'verbose', False) or \
+                             getattr(self.settings, 'verbose_routing', False)
+
+            if verbose_routing:
                 footer = (
                     f"\n\n_Model: {result.model_used} "
                     f"({result.execution_time:.2f}s)"
