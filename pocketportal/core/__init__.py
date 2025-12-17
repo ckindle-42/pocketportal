@@ -1,8 +1,8 @@
 """
-PocketPortal 4.0 - Unified Core Module
-======================================
+PocketPortal - Unified Core Module
+===================================
 
-This module contains the core components of PocketPortal 4.0,
+This module contains the core components of PocketPortal,
 refactored for true modularity and operational excellence.
 
 Architecture Overview:
@@ -11,7 +11,7 @@ Architecture Overview:
                                        ├─ EventBus
                                        └─ PromptManager
 
-Key Improvements in 4.0:
+Key Improvements in Current Architecture:
 - ✅ Dependency Injection for testability
 - ✅ Structured error handling with custom exceptions
 - ✅ Unified context management across interfaces
@@ -72,6 +72,9 @@ from .exceptions import (
     ValidationError
 )
 
+# Types
+from .types import InterfaceType
+
 __all__ = [
     # Core engine
     'AgentCoreV2',
@@ -107,6 +110,9 @@ __all__ = [
     'RateLimitError',
     'ContextNotFoundError',
     'ValidationError',
+
+    # Types
+    'InterfaceType',
 ]
 
-__version__ = '4.0.0'
+__version__ = '4.1.0'

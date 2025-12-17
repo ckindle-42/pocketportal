@@ -32,7 +32,7 @@ class SecurityConfig(BaseModel):
     max_requests_per_minute: int = Field(20, ge=1, le=1000, description="Max requests per minute")
     max_requests_per_hour: int = Field(100, ge=1, le=10000, description="Max requests per hour")
     max_file_size_mb: int = Field(10, ge=1, le=1000, description="Max file size in MB")
-    allowed_commands: Optional[List[str]] = Field(None, description="Whitelist of allowed shell commands")
+    allowed_commands: List[str] = Field(default_factory=list, description="Whitelist of allowed shell commands (empty = none allowed, secure by default)")
     sandbox_enabled: bool = Field(True, description="Enable Docker sandboxing for code execution")
     require_approval_for_high_risk: bool = Field(False, description="Require human approval for high-risk actions")
 
