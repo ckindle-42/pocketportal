@@ -10,6 +10,7 @@ import json
 import os
 import tempfile
 import shutil
+import shlex
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 from pathlib import Path
@@ -380,28 +381,67 @@ class InputSanitizer:
     def sanitize_filename(filename: str) -> str:
         """
         Sanitize filename to prevent directory traversal and special chars.
-        
+
         Args:
             filename: Original filename
-            
+
         Returns:
             Sanitized filename
         """
         # Remove path separators
         filename = filename.replace('/', '_').replace('\\', '_')
-        
+
         # Remove parent directory references
         filename = filename.replace('..', '')
-        
+
         # Remove special characters
         filename = re.sub(r'[^a-zA-Z0-9._-]', '_', filename)
-        
+
         # Limit length
         if len(filename) > 255:
             name, ext = filename.rsplit('.', 1) if '.' in filename else (filename, '')
             filename = name[:250] + ('.' + ext if ext else '')
-        
+
         return filename
+
+    @staticmethod
+    def quote_shell_arg(arg: str) -> str:
+        """
+        Safely quote a shell argument using shlex.quote().
+
+        This prevents shell injection attacks by properly escaping special characters.
+        Use this for ALL arguments passed to subprocess calls.
+
+        Args:
+            arg: Shell argument to quote
+
+        Returns:
+            Safely quoted argument
+
+        Example:
+            >>> InputSanitizer.quote_shell_arg("file name.txt")
+            "'file name.txt'"
+            >>> InputSanitizer.quote_shell_arg("'; rm -rf /")
+            "''\\'''; rm -rf /'"
+        """
+        return shlex.quote(arg)
+
+    @staticmethod
+    def quote_shell_args(args: List[str]) -> List[str]:
+        """
+        Safely quote multiple shell arguments.
+
+        Args:
+            args: List of shell arguments to quote
+
+        Returns:
+            List of safely quoted arguments
+
+        Example:
+            >>> InputSanitizer.quote_shell_args(["ls", "-la", "my file.txt"])
+            ['ls', '-la', "'my file.txt'"]
+        """
+        return [shlex.quote(arg) for arg in args]
 
 
 # =============================================================================

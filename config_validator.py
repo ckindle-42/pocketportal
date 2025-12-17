@@ -140,6 +140,33 @@ class AgentConfig(BaseModel):
         default=False,
         description="Show routing decisions in responses"
     )
+
+    # Model Preferences (configurable model routing)
+    # These can be overridden in .env to match your available models
+    model_pref_trivial: str = Field(
+        default="ollama_qwen25_05b,ollama_qwen25_1.5b",
+        description="Comma-separated preferred models for trivial tasks"
+    )
+    model_pref_simple: str = Field(
+        default="ollama_qwen25_1.5b,ollama_llama32_3b,ollama_qwen25_7b",
+        description="Comma-separated preferred models for simple tasks"
+    )
+    model_pref_moderate: str = Field(
+        default="ollama_qwen25_7b,ollama_qwen25_14b",
+        description="Comma-separated preferred models for moderate tasks"
+    )
+    model_pref_complex: str = Field(
+        default="ollama_qwen25_14b,ollama_qwen25_32b",
+        description="Comma-separated preferred models for complex tasks"
+    )
+    model_pref_expert: str = Field(
+        default="ollama_qwen25_32b,ollama_qwen25_14b",
+        description="Comma-separated preferred models for expert tasks"
+    )
+    model_pref_code: str = Field(
+        default="ollama_qwen25_coder,ollama_deepseek_coder,ollama_qwen25_14b",
+        description="Comma-separated preferred models for code tasks"
+    )
     
     class Config:
         env_file = ".env"
@@ -214,6 +241,12 @@ def load_and_validate_config() -> Optional[AgentConfig]:
         'venvs_dir': os.getenv('VENVS_DIR', '~/.telegram_agent/venvs'),
         'knowledge_base_dir': os.getenv('KNOWLEDGE_BASE_DIR', '~/.telegram_agent/knowledge_base'),
         'verbose_routing': os.getenv('VERBOSE_ROUTING', 'false').lower() == 'true',
+        'model_pref_trivial': os.getenv('MODEL_PREF_TRIVIAL', 'ollama_qwen25_05b,ollama_qwen25_1.5b'),
+        'model_pref_simple': os.getenv('MODEL_PREF_SIMPLE', 'ollama_qwen25_1.5b,ollama_llama32_3b,ollama_qwen25_7b'),
+        'model_pref_moderate': os.getenv('MODEL_PREF_MODERATE', 'ollama_qwen25_7b,ollama_qwen25_14b'),
+        'model_pref_complex': os.getenv('MODEL_PREF_COMPLEX', 'ollama_qwen25_14b,ollama_qwen25_32b'),
+        'model_pref_expert': os.getenv('MODEL_PREF_EXPERT', 'ollama_qwen25_32b,ollama_qwen25_14b'),
+        'model_pref_code': os.getenv('MODEL_PREF_CODE', 'ollama_qwen25_coder,ollama_deepseek_coder,ollama_qwen25_14b'),
     }
     
     try:

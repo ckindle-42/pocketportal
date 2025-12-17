@@ -59,12 +59,20 @@ from routing import (
 # Tool registry
 from telegram_agent_tools import registry as tool_registry
 
-# Configure logging
+# Configure logging with rotation
+from logging.handlers import RotatingFileHandler
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('logs/agent.log'),
+        # Rotate after 10MB, keep 5 backups
+        RotatingFileHandler(
+            'logs/agent.log',
+            maxBytes=10*1024*1024,  # 10 MB
+            backupCount=5,
+            encoding='utf-8'
+        ),
         logging.StreamHandler()
     ]
 )
@@ -97,9 +105,20 @@ class TelegramAgent:
         strategy_name = self.config.routing_strategy.upper()
         self.routing_strategy = getattr(RoutingStrategy, strategy_name, RoutingStrategy.AUTO)
 
+        # Build model preferences from config
+        model_preferences = {
+            'trivial': [m.strip() for m in self.config.model_pref_trivial.split(',') if m.strip()],
+            'simple': [m.strip() for m in self.config.model_pref_simple.split(',') if m.strip()],
+            'moderate': [m.strip() for m in self.config.model_pref_moderate.split(',') if m.strip()],
+            'complex': [m.strip() for m in self.config.model_pref_complex.split(',') if m.strip()],
+            'expert': [m.strip() for m in self.config.model_pref_expert.split(',') if m.strip()],
+            'code': [m.strip() for m in self.config.model_pref_code.split(',') if m.strip()],
+        }
+
         self.router = IntelligentRouter(
             self.model_registry,
-            strategy=self.routing_strategy
+            strategy=self.routing_strategy,
+            model_preferences=model_preferences
         )
 
         # Backend configuration from validated config
@@ -577,18 +596,34 @@ Everything runs locally - no data leaves your machine!"""
                     return
 
                 # Read text file asynchronously to avoid blocking
+                # SECURITY: Limit read size to prevent memory spikes even if file passes size check
+                MAX_READ_SIZE = MAX_FILE_SIZE  # Use same limit for consistency
                 content = ""
+
                 if HAS_AIOFILES:
                     async with aiofiles.open(doc_path, 'r', encoding='utf-8') as f:
-                        content = await f.read()
+                        # Read in chunks to avoid loading entire file at once
+                        chunks = []
+                        total_read = 0
+                        while total_read < MAX_READ_SIZE:
+                            chunk = await f.read(8192)  # 8KB chunks
+                            if not chunk:
+                                break
+                            chunks.append(chunk)
+                            total_read += len(chunk)
+                            if total_read >= MAX_READ_SIZE:
+                                break
+                        content = ''.join(chunks)
                 else:
                     # Fallback to sync reading if aiofiles not available
                     # Use executor to avoid blocking the event loop
+                    # Still enforce read size limit
+                    def read_limited():
+                        with open(doc_path, 'r', encoding='utf-8') as f:
+                            return f.read(MAX_READ_SIZE)
+
                     loop = asyncio.get_running_loop()
-                    content = await loop.run_in_executor(
-                        None,
-                        lambda: doc_path.read_text(encoding='utf-8')
-                    )
+                    content = await loop.run_in_executor(None, read_limited)
 
                 await update.message.reply_text(
                     f"âœ… Text file received ({len(content)} chars)\n"
