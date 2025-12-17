@@ -16,6 +16,7 @@ import asyncio
 import logging
 import os
 import sys
+import signal
 import tempfile
 import platform
 from pathlib import Path
@@ -30,6 +31,9 @@ except ImportError:
     HAS_AIOFILES = False
     logger = logging.getLogger(__name__)
     logger.warning("aiofiles not available, falling back to sync file operations")
+
+# HTTP server for health checks
+from aiohttp import web
 
 # Telegram imports
 from telegram import Update, Bot
@@ -61,21 +65,79 @@ from telegram_agent_tools import registry as tool_registry
 
 # Configure logging with rotation
 from logging.handlers import RotatingFileHandler
+import json as json_lib
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        # Rotate after 10MB, keep 5 backups
-        RotatingFileHandler(
-            'logs/agent.log',
-            maxBytes=10*1024*1024,  # 10 MB
-            backupCount=5,
-            encoding='utf-8'
-        ),
-        logging.StreamHandler()
-    ]
-)
+
+class JSONFormatter(logging.Formatter):
+    """
+    Custom JSON formatter for structured logging.
+
+    Outputs logs in JSON format for easy parsing by monitoring tools.
+    """
+
+    def format(self, record):
+        """Format log record as JSON"""
+        log_data = {
+            'timestamp': self.formatTime(record, self.datefmt),
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+            'module': record.module,
+            'function': record.funcName,
+            'line': record.lineno
+        }
+
+        # Add exception info if present
+        if record.exc_info:
+            log_data['exception'] = self.formatException(record.exc_info)
+
+        # Add extra fields from 'extra' parameter
+        if hasattr(record, 'extra'):
+            log_data.update(record.extra)
+
+        return json_lib.dumps(log_data)
+
+
+def setup_logging(log_format_json: bool = False):
+    """
+    Setup logging with optional JSON formatting.
+
+    Args:
+        log_format_json: If True, use JSON format. Otherwise use plain text.
+    """
+    # Determine formatter based on config
+    if log_format_json:
+        formatter = JSONFormatter()
+    else:
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+
+    # File handler with rotation
+    file_handler = RotatingFileHandler(
+        'logs/agent.log',
+        maxBytes=10*1024*1024,  # 10 MB
+        backupCount=5,
+        encoding='utf-8'
+    )
+    file_handler.setFormatter(formatter)
+
+    # Console handler (always use plain text for readability)
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    ))
+
+    # Configure root logger
+    logging.basicConfig(
+        level=logging.INFO,
+        handlers=[file_handler, console_handler]
+    )
+
+
+# Note: Logging will be properly configured after config is loaded
+# This is just a temporary setup to allow early logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Security constants
@@ -84,14 +146,25 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB limit for file reading
 
 class TelegramAgent:
     """Main Telegram AI Agent with intelligent routing"""
-    
+
     def __init__(self):
         """Initialize the agent"""
+
+        # Shutdown flag for graceful termination
+        self._shutdown_requested = False
+
+        # Health check HTTP server
+        self._health_check_runner = None
+        self._health_check_site = None
 
         # Load and validate configuration
         self.config = load_and_validate_config()
         if not self.config:
             raise ValueError("Invalid configuration - please fix .env file")
+
+        # Configure logging based on config settings
+        setup_logging(log_format_json=self.config.log_format_json)
+        logger.info(f"Logging configured (JSON format: {self.config.log_format_json})")
 
         # Extract frequently used config values
         self.bot_token = self.config.telegram_bot_token
@@ -684,11 +757,131 @@ Everything runs locally - no data leaves your machine!"""
             logger.warning(f"Unauthorized access attempt from user {user_id}")
             return False
         return True
+
+    async def shutdown(self):
+        """
+        Gracefully shutdown the agent.
+
+        This method:
+        1. Saves rate limiter state
+        2. Stops health check server
+        3. Stops execution engine
+        4. Closes any open resources
+        """
+        if self._shutdown_requested:
+            return  # Already shutting down
+
+        self._shutdown_requested = True
+        logger.info("Initiating graceful shutdown...")
+
+        try:
+            # Stop health check server
+            if self._health_check_site:
+                logger.info("Stopping health check server...")
+                await self._health_check_site.stop()
+            if self._health_check_runner:
+                await self._health_check_runner.cleanup()
+
+            # Save rate limiter state (already happens automatically via _save_state)
+            # but we can force a final save here
+            logger.info("Saving rate limiter state...")
+            self.rate_limiter._save_state()
+
+            # Future: Add execution engine cleanup if it has pending tasks
+            # self.execution_engine.shutdown()
+
+            logger.info("Shutdown complete")
+        except Exception as e:
+            logger.error(f"Error during shutdown: {e}", exc_info=True)
     
     # ========================================================================
     # MAIN RUN METHOD
     # ========================================================================
     
+    def _setup_signal_handlers(self):
+        """Setup signal handlers for graceful shutdown"""
+
+        def signal_handler(signum, frame):
+            """Handle shutdown signals"""
+            sig_name = signal.Signals(signum).name
+            logger.info(f"Received signal {sig_name}, initiating graceful shutdown...")
+
+            # Schedule shutdown in the event loop
+            if self.application and self.application.running:
+                asyncio.create_task(self._handle_shutdown())
+
+        # Register handlers for SIGINT (Ctrl+C) and SIGTERM
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+
+        logger.info("Signal handlers registered (SIGINT, SIGTERM)")
+
+    async def _handle_shutdown(self):
+        """Handle shutdown in async context"""
+        await self.shutdown()
+
+        # Stop the application
+        if self.application and self.application.running:
+            await self.application.stop()
+            await self.application.shutdown()
+
+    async def _health_check_handler(self, request):
+        """
+        Health check HTTP endpoint handler.
+
+        Returns JSON with system status.
+        Useful for Docker healthchecks, supervisor, or monitoring tools.
+        """
+        try:
+            # Gather health metrics
+            health_data = {
+                'status': 'healthy',
+                'agent_version': '3.0',
+                'tools_loaded': len(tool_registry.get_all_tools()),
+                'models_registered': len(self.model_registry.models),
+                'routing_strategy': self.routing_strategy.value,
+                'shutdown_requested': self._shutdown_requested
+            }
+
+            return web.json_response(health_data, status=200)
+
+        except Exception as e:
+            logger.error(f"Health check error: {e}", exc_info=True)
+            return web.json_response({
+                'status': 'unhealthy',
+                'error': str(e)
+            }, status=500)
+
+    async def _start_health_check_server(self):
+        """Start HTTP health check server on localhost"""
+        if not self.config.health_check_enabled:
+            logger.info("Health check server disabled in config")
+            return
+
+        try:
+            app = web.Application()
+            app.router.add_get('/health', self._health_check_handler)
+            app.router.add_get('/', self._health_check_handler)  # Root also works
+
+            self._health_check_runner = web.AppRunner(app)
+            await self._health_check_runner.setup()
+
+            # Bind to localhost only for security
+            self._health_check_site = web.TCPSite(
+                self._health_check_runner,
+                host='127.0.0.1',
+                port=self.config.health_check_port
+            )
+
+            await self._health_check_site.start()
+
+            logger.info(f"âœ… Health check server running on http://127.0.0.1:{self.config.health_check_port}/health")
+            logger.info(f"   Test with: curl http://127.0.0.1:{self.config.health_check_port}/health")
+
+        except Exception as e:
+            logger.error(f"Failed to start health check server: {e}", exc_info=True)
+            logger.warning("Continuing without health check server...")
+
     def run(self):
         """Start the agent"""
 
@@ -696,6 +889,16 @@ Everything runs locally - no data leaves your machine!"""
 
         # Create application
         self.application = Application.builder().token(self.bot_token).build()
+
+        # Setup signal handlers for graceful shutdown
+        self._setup_signal_handlers()
+
+        # Add startup callback to start health check server
+        async def post_init(application):
+            """Initialize health check server after application starts"""
+            await self._start_health_check_server()
+
+        self.application.post_init = post_init
 
         # Add command handlers
         self.application.add_handler(CommandHandler("start", self.start_command))
@@ -727,7 +930,11 @@ Everything runs locally - no data leaves your machine!"""
 
         # Use built-in run_polling for robust lifecycle management
         # Handles signal interception (Ctrl+C), cleanup, and event loop automatically
-        self.application.run_polling(allowed_updates=Update.ALL_TYPES)
+        try:
+            self.application.run_polling(allowed_updates=Update.ALL_TYPES)
+        finally:
+            # Ensure cleanup happens even if run_polling doesn't handle it
+            logger.info("Agent stopped")
 
 
 # ============================================================================
