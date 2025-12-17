@@ -44,7 +44,7 @@ Usage:
 """
 
 # Core engine
-from .agent_engine_v2 import AgentCoreV2, ProcessingResult, create_agent_core
+from .engine import AgentCoreV2, ProcessingResult, create_agent_core
 
 # Components
 from .context_manager import ContextManager, Message

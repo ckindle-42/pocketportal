@@ -12,7 +12,7 @@ pocketportal/                       # Repository root
 │   ├── __init__.py                # Package entry point
 │   ├── core/                      # The Brain - Core agent logic
 │   │   ├── __init__.py
-│   │   ├── agent_engine_v2.py     # Main agent orchestration
+│   │   ├── engine.py              # Main agent orchestration
 │   │   ├── context_manager.py     # Conversation history
 │   │   ├── event_bus.py           # Real-time event system
 │   │   ├── exceptions.py          # Custom exceptions
@@ -48,7 +48,7 @@ pocketportal/                       # Repository root
 │   │   ├── audio_tools/          # Whisper transcription
 │   │   ├── automation_tools/     # Scheduling, cron
 │   │   ├── dev_tools/            # Python environment mgmt
-│   │   ├── utility_tools/        # QR codes, compression
+│   │   ├── utilities/            # QR codes, compression, text tools
 │   │   ├── mcp_tools/            # Model Context Protocol
 │   │   ├── knowledge/            # NEW: Knowledge base
 │   │   │   ├── __init__.py
@@ -64,8 +64,8 @@ pocketportal/                       # Repository root
 │   ├── interfaces/               # User-Facing Adapters
 │   │   ├── __init__.py
 │   │   ├── telegram_interface.py # Telegram bot
-│   │   ├── web_interface.py      # FastAPI + WebSocket
-│   │   └── enhanced_telegram_ui.py # Advanced UI features
+│   │   ├── telegram_ui.py        # Advanced Telegram UI features
+│   │   └── web_interface.py      # FastAPI + WebSocket
 │   │
 │   ├── config/                   # Configuration Management
 │   │   ├── __init__.py
@@ -83,7 +83,7 @@ pocketportal/                       # Repository root
 │
 ├── docs/                         # Documentation
 ├── scripts/                      # Utility scripts
-├── archive/                      # Legacy code (v3.x)
+# (archive/ removed - legacy code moved to git history)
 │
 ├── pyproject.toml               # Modern Python packaging
 ├── README.md                    # Main documentation

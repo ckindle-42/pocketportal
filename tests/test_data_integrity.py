@@ -26,7 +26,7 @@ class TestAtomicWrites:
 
     def test_atomic_write_creates_backup(self, tmp_path):
         """Verify backup is created before write"""
-        from telegram_agent_tools.knowledge_tools.local_knowledge import LocalKnowledgeTool
+        from pocketportal.tools.knowledge.local_knowledge import LocalKnowledgeTool
 
         # Create test instance with temp path
         tool = LocalKnowledgeTool()
@@ -49,7 +49,7 @@ class TestAtomicWrites:
 
     def test_atomic_write_survives_crash(self, tmp_path):
         """Verify data integrity if write is interrupted"""
-        from telegram_agent_tools.knowledge_tools.local_knowledge import LocalKnowledgeTool
+        from pocketportal.tools.knowledge.local_knowledge import LocalKnowledgeTool
 
         tool = LocalKnowledgeTool()
         tool.DB_PATH = tmp_path / "test_kb.json"
@@ -66,7 +66,7 @@ class TestAtomicWrites:
 
     def test_atomic_write_no_partial_data(self, tmp_path):
         """Verify no partial/corrupted JSON is written"""
-        from telegram_agent_tools.knowledge_tools.local_knowledge import LocalKnowledgeTool
+        from pocketportal.tools.knowledge.local_knowledge import LocalKnowledgeTool
 
         tool = LocalKnowledgeTool()
         tool.DB_PATH = tmp_path / "test_kb.json"
@@ -268,7 +268,7 @@ class TestDataIntegrityIntegration:
     @pytest.mark.asyncio
     async def test_concurrent_writes_knowledge_base(self, tmp_path):
         """Test concurrent writes don't corrupt knowledge base"""
-        from telegram_agent_tools.knowledge_tools.local_knowledge import LocalKnowledgeTool
+        from pocketportal.tools.knowledge.local_knowledge import LocalKnowledgeTool
 
         tool = LocalKnowledgeTool()
         tool.DB_PATH = tmp_path / "concurrent_kb.json"
