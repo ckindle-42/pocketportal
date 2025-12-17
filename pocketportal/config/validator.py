@@ -155,6 +155,16 @@ class AgentConfig(BaseModel):
         description="Show routing decisions in responses"
     )
 
+    # Docker Tools Configuration
+    docker_tools_enabled: bool = Field(
+        default=False,
+        description="Enable Docker management tools"
+    )
+    docker_socket_path: str = Field(
+        default="/var/run/docker.sock",
+        description="Path to Docker socket"
+    )
+
     # Health Check HTTP Server
     health_check_enabled: bool = Field(
         default=True,
@@ -209,7 +219,37 @@ class AgentConfig(BaseModel):
     def expand_path(cls, v):
         """Expand user paths"""
         return Path(v).expanduser().absolute()
-    
+
+    @validator('docker_socket_path')
+    def validate_docker_socket(cls, v, values):
+        """
+        Validate Docker socket exists if Docker tools are enabled.
+        Fail fast at startup if docker_tools_enabled=True but socket is missing.
+        """
+        # Only validate if Docker tools are explicitly enabled
+        docker_enabled = values.get('docker_tools_enabled', False)
+
+        if docker_enabled:
+            socket_path = Path(v)
+
+            # Check if socket exists
+            if not socket_path.exists():
+                raise ValueError(
+                    f"Docker socket not found at {v}. "
+                    f"Either disable Docker tools (DOCKER_TOOLS_ENABLED=false) "
+                    f"or ensure Docker is running and the socket path is correct."
+                )
+
+            # Check if it's a socket (not a regular file)
+            import stat
+            if not stat.S_ISSOCK(socket_path.stat().st_mode):
+                raise ValueError(
+                    f"Path {v} exists but is not a socket. "
+                    f"Please verify Docker is installed correctly."
+                )
+
+        return v
+
     def create_directories(self):
         """Create all required directories"""
         dirs_to_create = [
@@ -268,6 +308,8 @@ def load_and_validate_config() -> Optional[AgentConfig]:
         'venvs_dir': os.getenv('VENVS_DIR', '~/.telegram_agent/venvs'),
         'knowledge_base_dir': os.getenv('KNOWLEDGE_BASE_DIR', '~/.telegram_agent/knowledge_base'),
         'verbose_routing': os.getenv('VERBOSE_ROUTING', 'false').lower() == 'true',
+        'docker_tools_enabled': os.getenv('DOCKER_TOOLS_ENABLED', 'false').lower() == 'true',
+        'docker_socket_path': os.getenv('DOCKER_SOCKET_PATH', '/var/run/docker.sock'),
         'health_check_enabled': os.getenv('HEALTH_CHECK_ENABLED', 'true').lower() == 'true',
         'health_check_port': int(os.getenv('HEALTH_CHECK_PORT', '8765')),
         'model_pref_trivial': os.getenv('MODEL_PREF_TRIVIAL', 'ollama_qwen25_05b,ollama_qwen25_1.5b'),

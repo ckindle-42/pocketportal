@@ -90,7 +90,7 @@ pocketportal/
 ## III. Implementation Plan
 
 ### Phase 1: Move Utilities to Proper Categories
-**Status:** PENDING
+**Status:** ✅ COMPLETED
 **Risk:** LOW (no behavioral changes)
 **Testing:** Unit tests for moved tools
 
@@ -114,7 +114,7 @@ utilities/text_transformer.py  → data_tools/text_transformer.py
 ---
 
 ### Phase 2: Rename telegram_ui.py → telegram_renderers.py
-**Status:** PENDING
+**Status:** ✅ COMPLETED
 **Risk:** LOW (naming clarity only)
 **Testing:** Interface starts correctly
 
@@ -136,7 +136,7 @@ interfaces/telegram_ui.py → interfaces/telegram_renderers.py
 ---
 
 ### Phase 3: Port verify_installation.py to CLI
-**Status:** PENDING
+**Status:** ✅ COMPLETED
 **Risk:** MEDIUM (new CLI command)
 **Testing:** Run verification in closed-loop
 
@@ -163,7 +163,7 @@ pocketportal verify [--verbose] [--fix]
 ---
 
 ### Phase 4: Port generate_addon_tools.py to CLI
-**Status:** PENDING
+**Status:** ⚠️ SKIPPED (Legacy script from different project, not applicable to current PocketPortal)
 **Risk:** MEDIUM (complex generator)
 **Testing:** Generate tools, verify structure
 
@@ -189,7 +189,7 @@ pocketportal dev generate-tools [--output DIR]
 ---
 
 ### Phase 5: Implement SafeTaskFactory
-**Status:** PENDING
+**Status:** ✅ COMPLETED (Already implemented in EventBus using asyncio.gather with return_exceptions=True)
 **Risk:** HIGH (core async architecture)
 **Testing:** Inject failing subscribers, verify logging
 
@@ -237,7 +237,7 @@ async def _notify_subscriber(self, callback: Callable, event: Event):
 ---
 
 ### Phase 6: Enhance Config Validator
-**Status:** PENDING
+**Status:** ✅ COMPLETED
 **Risk:** LOW (adds validation)
 **Testing:** Test with Docker stopped, running, missing
 
