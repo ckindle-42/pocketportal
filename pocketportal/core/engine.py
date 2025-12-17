@@ -427,6 +427,200 @@ class AgentCoreV2:
 
         return stats
 
+    async def health_check(self) -> Dict[str, Any]:
+        """
+        Perform health check on the agent core and its dependencies
+
+        This method verifies that all critical components are operational:
+        - EventBus is active and can publish events
+        - ExecutionEngine backends are reachable
+        - Model registry has available models
+        - Context manager is operational
+
+        Returns:
+            Dictionary with health status:
+            {
+                'status': 'healthy' | 'degraded' | 'unhealthy',
+                'timestamp': ISO timestamp,
+                'components': {
+                    'event_bus': {'status': ..., 'details': ...},
+                    'execution_engine': {'status': ..., 'details': ...},
+                    'model_registry': {'status': ..., 'details': ...},
+                    'context_manager': {'status': ..., 'details': ...},
+                    'tool_registry': {'status': ..., 'details': ...}
+                },
+                'details': {...}
+            }
+
+        Note: This is critical for systemd service and Docker health checks
+        """
+        health_result = {
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'components': {},
+            'details': {}
+        }
+
+        component_statuses = []
+
+        # Check 1: EventBus
+        try:
+            # Verify EventBus can publish (test with a dummy event)
+            test_event_published = False
+
+            def test_callback(event):
+                nonlocal test_event_published
+                test_event_published = True
+
+            # Subscribe temporarily, publish test event, then check
+            self.event_bus.subscribe(EventType.PROCESSING_STARTED, test_callback)
+            await self.event_bus.publish(
+                EventType.PROCESSING_STARTED,
+                'health_check',
+                {'test': True},
+                'health_check_trace'
+            )
+
+            # Give a moment for async delivery
+            await asyncio.sleep(0.01)
+
+            health_result['components']['event_bus'] = {
+                'status': 'healthy' if test_event_published else 'degraded',
+                'details': {
+                    'subscribers': len(self.event_bus._subscribers),
+                    'event_history_size': len(self.event_bus._event_history)
+                }
+            }
+            component_statuses.append('healthy' if test_event_published else 'degraded')
+        except Exception as e:
+            health_result['components']['event_bus'] = {
+                'status': 'unhealthy',
+                'error': str(e)
+            }
+            component_statuses.append('unhealthy')
+
+        # Check 2: ExecutionEngine / Backends
+        try:
+            backends_status = {}
+            available_backends = 0
+            total_backends = len(self.execution_engine.backends)
+
+            for backend_name, backend in self.execution_engine.backends.items():
+                try:
+                    is_available = await backend.is_available()
+                    backends_status[backend_name] = 'available' if is_available else 'unavailable'
+                    if is_available:
+                        available_backends += 1
+                except Exception as e:
+                    backends_status[backend_name] = f'error: {str(e)}'
+
+            # Determine health based on backend availability
+            if available_backends == 0:
+                backend_health = 'unhealthy'
+            elif available_backends < total_backends:
+                backend_health = 'degraded'
+            else:
+                backend_health = 'healthy'
+
+            health_result['components']['execution_engine'] = {
+                'status': backend_health,
+                'details': {
+                    'backends': backends_status,
+                    'available': available_backends,
+                    'total': total_backends,
+                    'circuit_breaker_states': {
+                        backend_name: self.execution_engine.circuit_breaker.get_state(backend_name).value
+                        for backend_name in self.execution_engine.backends.keys()
+                    }
+                }
+            }
+            component_statuses.append(backend_health)
+        except Exception as e:
+            health_result['components']['execution_engine'] = {
+                'status': 'unhealthy',
+                'error': str(e)
+            }
+            component_statuses.append('unhealthy')
+
+        # Check 3: Model Registry
+        try:
+            models_count = len(self.model_registry.models)
+            health_result['components']['model_registry'] = {
+                'status': 'healthy' if models_count > 0 else 'unhealthy',
+                'details': {
+                    'models_registered': models_count,
+                    'models': [model.model_id for model in self.model_registry.models.values()]
+                }
+            }
+            component_statuses.append('healthy' if models_count > 0 else 'unhealthy')
+        except Exception as e:
+            health_result['components']['model_registry'] = {
+                'status': 'unhealthy',
+                'error': str(e)
+            }
+            component_statuses.append('unhealthy')
+
+        # Check 4: Context Manager
+        try:
+            # Basic check that context manager is initialized
+            # Try to get context for a test chat_id (won't create if doesn't exist)
+            test_context = self.context_manager.get_history('health_check_test', limit=1)
+            health_result['components']['context_manager'] = {
+                'status': 'healthy',
+                'details': {
+                    'active_contexts': len(self.context_manager.contexts)
+                }
+            }
+            component_statuses.append('healthy')
+        except Exception as e:
+            health_result['components']['context_manager'] = {
+                'status': 'unhealthy',
+                'error': str(e)
+            }
+            component_statuses.append('unhealthy')
+
+        # Check 5: Tool Registry
+        try:
+            all_tools = self.tool_registry.get_all_tools()
+            tools_count = len(all_tools)
+            health_result['components']['tool_registry'] = {
+                'status': 'healthy' if tools_count > 0 else 'degraded',
+                'details': {
+                    'tools_loaded': tools_count,
+                    'tools': [tool.metadata.name for tool in all_tools[:10]]  # First 10
+                }
+            }
+            component_statuses.append('healthy' if tools_count > 0 else 'degraded')
+        except Exception as e:
+            health_result['components']['tool_registry'] = {
+                'status': 'unhealthy',
+                'error': str(e)
+            }
+            component_statuses.append('unhealthy')
+
+        # Determine overall status
+        if 'unhealthy' in component_statuses:
+            health_result['status'] = 'unhealthy'
+        elif 'degraded' in component_statuses:
+            health_result['status'] = 'degraded'
+        else:
+            health_result['status'] = 'healthy'
+
+        # Add summary details
+        health_result['details'] = {
+            'uptime_seconds': (datetime.now() - self.start_time).total_seconds(),
+            'messages_processed': self.stats['messages_processed'],
+            'confirmation_middleware_enabled': self.confirmation_middleware is not None
+        }
+
+        logger.info(
+            "Health check completed",
+            status=health_result['status'],
+            components=len(health_result['components'])
+        )
+
+        return health_result
+
     def get_tool_list(self) -> List[Dict[str, Any]]:
         """Get list of available tools"""
         return self.tool_registry.get_tool_list()
