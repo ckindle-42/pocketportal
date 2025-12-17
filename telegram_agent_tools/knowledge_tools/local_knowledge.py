@@ -4,6 +4,7 @@ import os
 import json
 from pathlib import Path
 from typing import Dict, Any, List, Optional
+from datetime import datetime
 
 try:
     import aiofiles
@@ -22,7 +23,8 @@ class LocalKnowledgeTool(BaseTool):
     _embeddings_model: Optional[Any] = None
     _db_loaded: bool = False
 
-    DB_PATH = Path("data/knowledge_base.json")
+    # Use config from environment or fallback to default
+    DB_PATH = Path(os.getenv('KNOWLEDGE_BASE_DIR', 'data')) / "knowledge_base.json"
 
     def __init__(self):
         super().__init__()

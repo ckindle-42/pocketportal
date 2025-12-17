@@ -376,14 +376,23 @@ Everything runs locally - no data leaves your machine!"""
 
         user_message = update.message.text
         logger.info(f"Processing text message: {user_message[:50]}...")
-        
+
         # Send "typing" indicator
         await update.message.chat.send_action("typing")
-        
+
         try:
+            # SECURITY: Sanitize user input before execution
+            sanitized_query, warnings = self.input_sanitizer.sanitize_command(user_message)
+
+            if warnings:
+                logger.warning(f"Security warnings for user {update.effective_user.id}: {warnings}")
+                # Notify user if dangerous patterns detected
+                warning_msg = "⚠️ Security notice: " + "; ".join(warnings)
+                await update.message.reply_text(warning_msg)
+
             # Execute with routing (using dynamic system prompt)
             result = await self.execution_engine.execute(
-                query=user_message,
+                query=sanitized_query,  # Use sanitized version
                 system_prompt=self._build_system_prompt()
             )
             
