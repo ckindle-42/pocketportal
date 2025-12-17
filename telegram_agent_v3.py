@@ -21,6 +21,15 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 from datetime import datetime
 
+# Async file I/O
+try:
+    import aiofiles
+    HAS_AIOFILES = True
+except ImportError:
+    HAS_AIOFILES = False
+    logger = logging.getLogger(__name__)
+    logger.warning("aiofiles not available, falling back to sync file operations")
+
 # Telegram imports
 from telegram import Update, Bot
 from telegram.ext import (
@@ -383,17 +392,21 @@ Everything runs locally - no data leaves your machine!"""
                 })
                 
                 if result['success']:
-                    # Result is a list of transcription results
-                    transcriptions = result['result']
-                    if transcriptions and len(transcriptions) > 0 and transcriptions[0].get('success'):
-                        text = transcriptions[0]['text']
-                        await update.message.reply_text(
-                            f"ðŸ“ **Transcription:**\n\n{text}",
-                            parse_mode='Markdown'
-                        )
+                    # Result is a list of transcription results - handle edge cases robustly
+                    transcriptions = result.get('result', [])
+                    if isinstance(transcriptions, list) and len(transcriptions) > 0:
+                        first_result = transcriptions[0]
+                        if first_result.get('success'):
+                            text = first_result.get('text', '')
+                            await update.message.reply_text(
+                                f"ðŸ" **Transcription:**\n\n{text}",
+                                parse_mode='Markdown'
+                            )
+                        else:
+                            error_msg = first_result.get('error', 'Unknown error')
+                            await update.message.reply_text(f"❌ Transcription failed: {error_msg}")
                     else:
-                        error_msg = transcriptions[0].get('error', 'Unknown error') if transcriptions else 'No results'
-                        await update.message.reply_text(f"❌ Transcription failed: {error_msg}")
+                        await update.message.reply_text("❌ No transcription results returned")
                 else:
                     await update.message.reply_text(f"âŒ Error: {result.get('error')}")
             else:
@@ -479,8 +492,15 @@ Everything runs locally - no data leaves your machine!"""
                     "â€¢ Show statistics for this data"
                 )
             elif document.file_name.endswith(('.txt', '.md')):
-                # Read text file
-                content = doc_path.read_text()
+                # Read text file asynchronously to avoid blocking
+                content = ""
+                if HAS_AIOFILES:
+                    async with aiofiles.open(doc_path, 'r', encoding='utf-8') as f:
+                        content = await f.read()
+                else:
+                    # Fallback to sync reading if aiofiles not available
+                    content = doc_path.read_text(encoding='utf-8')
+
                 await update.message.reply_text(
                     f"âœ… Text file received ({len(content)} chars)\n"
                     "Ask me anything about this file!"
