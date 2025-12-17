@@ -28,22 +28,6 @@ from base_tool import BaseTool, ToolMetadata, ToolParameter, ToolCategory
 
 logger = logging.getLogger(__name__)
 
-# Check dependencies
-try:
-    import openpyxl
-    from openpyxl.styles import Font, Fill, PatternFill, Alignment, Border, Side
-    from openpyxl.chart import BarChart, LineChart, PieChart, Reference
-    from openpyxl.utils import get_column_letter
-    OPENPYXL_AVAILABLE = True
-except ImportError:
-    OPENPYXL_AVAILABLE = False
-
-try:
-    import pandas as pd
-    PANDAS_AVAILABLE = True
-except ImportError:
-    PANDAS_AVAILABLE = False
-
 
 class ExcelProcessorTool(BaseTool):
     """
@@ -123,14 +107,17 @@ class ExcelProcessorTool(BaseTool):
     
     async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """Execute Excel operation"""
-        
-        if not OPENPYXL_AVAILABLE:
+
+        # Lazy import - only load when actually executing
+        try:
+            import openpyxl
+        except ImportError:
             return self._error_response(
                 "openpyxl not installed. Install: pip install openpyxl xlsxwriter"
             )
-        
+
         action = parameters.get("action", "").lower()
-        
+
         if action == "read":
             return await self._read_excel(parameters)
         elif action == "write":
@@ -146,14 +133,16 @@ class ExcelProcessorTool(BaseTool):
     
     async def _read_excel(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """Read Excel file"""
-        
+
+        import openpyxl
+
         file_path = Path(parameters.get("file_path", "")).expanduser()
         sheet_name = parameters.get("sheet_name", "Sheet1")
         cell_range = parameters.get("range")
-        
+
         if not file_path.exists():
             return self._error_response(f"File not found: {file_path}")
-        
+
         try:
             # Load workbook
             wb = openpyxl.load_workbook(file_path, data_only=True)
@@ -196,22 +185,25 @@ class ExcelProcessorTool(BaseTool):
     
     async def _write_excel(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """Write Excel file"""
-        
+
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill
+
         file_path = Path(parameters.get("file_path", "")).expanduser()
         sheet_name = parameters.get("sheet_name", "Sheet1")
         data = parameters.get("data")
         headers = parameters.get("headers")
         formulas = parameters.get("formulas", [])
-        
+
         if not data:
             return self._error_response("No data provided")
-        
+
         try:
             # Create workbook
             wb = openpyxl.Workbook()
             ws = wb.active
             ws.title = sheet_name
-            
+
             # Write headers
             start_row = 1
             if headers:
@@ -272,16 +264,18 @@ class ExcelProcessorTool(BaseTool):
     
     async def _analyze_excel(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze Excel data"""
-        
-        if not PANDAS_AVAILABLE:
+
+        try:
+            import pandas as pd
+        except ImportError:
             return self._error_response("pandas not installed. Install: pip install pandas")
-        
+
         file_path = Path(parameters.get("file_path", "")).expanduser()
         sheet_name = parameters.get("sheet_name", 0)  # Default to first sheet
-        
+
         if not file_path.exists():
             return self._error_response(f"File not found: {file_path}")
-        
+
         try:
             # Load with pandas
             df = pd.read_excel(file_path, sheet_name=sheet_name)
@@ -320,15 +314,17 @@ class ExcelProcessorTool(BaseTool):
     
     async def _format_excel(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """Format Excel cells"""
-        
+
+        import openpyxl
+
         file_path = Path(parameters.get("file_path", "")).expanduser()
         sheet_name = parameters.get("sheet_name", "Sheet1")
         cell_range = parameters.get("range", "A1")
         formatting = parameters.get("formatting", {})
-        
+
         if not file_path.exists():
             return self._error_response(f"File not found: {file_path}")
-        
+
         try:
             # Load workbook
             wb = openpyxl.load_workbook(file_path)
@@ -361,7 +357,9 @@ class ExcelProcessorTool(BaseTool):
     
     def _apply_cell_formatting(self, cell, formatting: Dict):
         """Apply formatting to a cell"""
-        
+
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
         # Font
         if "font" in formatting:
             font_opts = formatting["font"]
@@ -372,7 +370,7 @@ class ExcelProcessorTool(BaseTool):
                 italic=font_opts.get("italic", False),
                 color=font_opts.get("color")
             )
-        
+
         # Fill
         if "fill" in formatting:
             fill_opts = formatting["fill"]
@@ -381,7 +379,7 @@ class ExcelProcessorTool(BaseTool):
                 end_color=fill_opts.get("color", "FFFFFF"),
                 fill_type="solid"
             )
-        
+
         # Alignment
         if "alignment" in formatting:
             align_opts = formatting["alignment"]
@@ -390,7 +388,7 @@ class ExcelProcessorTool(BaseTool):
                 vertical=align_opts.get("vertical", "top"),
                 wrap_text=align_opts.get("wrap", False)
             )
-        
+
         # Border
         if "border" in formatting:
             border_opts = formatting["border"]
@@ -404,24 +402,27 @@ class ExcelProcessorTool(BaseTool):
     
     async def _add_chart(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """Add chart to Excel file"""
-        
+
+        import openpyxl
+        from openpyxl.chart import BarChart, LineChart, PieChart, Reference
+
         file_path = Path(parameters.get("file_path", "")).expanduser()
         sheet_name = parameters.get("sheet_name", "Sheet1")
         chart_type = parameters.get("chart_type", "bar")
         data_range = parameters.get("range", "A1:B10")
-        
+
         if not file_path.exists():
             return self._error_response(f"File not found: {file_path}")
-        
+
         try:
             # Load workbook
             wb = openpyxl.load_workbook(file_path)
-            
+
             if sheet_name not in wb.sheetnames:
                 return self._error_response(f"Sheet '{sheet_name}' not found")
-            
+
             ws = wb[sheet_name]
-            
+
             # Create chart
             if chart_type == "bar":
                 chart = BarChart()
@@ -431,7 +432,7 @@ class ExcelProcessorTool(BaseTool):
                 chart = PieChart()
             else:
                 return self._error_response(f"Unknown chart type: {chart_type}")
-            
+
             # Set data
             data = Reference(ws, range_string=data_range)
             chart.add_data(data, titles_from_data=True)
