@@ -33,44 +33,6 @@ from base_tool import BaseTool, ToolMetadata, ToolParameter, ToolCategory
 
 logger = logging.getLogger(__name__)
 
-# Check dependencies
-try:
-    from PyPDF2 import PdfReader
-    PDF_AVAILABLE = True
-except ImportError:
-    PDF_AVAILABLE = False
-
-try:
-    from docx import Document
-    DOCX_AVAILABLE = True
-except ImportError:
-    DOCX_AVAILABLE = False
-
-try:
-    from pptx import Presentation
-    PPTX_AVAILABLE = True
-except ImportError:
-    PPTX_AVAILABLE = False
-
-try:
-    from openpyxl import load_workbook
-    XLSX_AVAILABLE = True
-except ImportError:
-    XLSX_AVAILABLE = False
-
-try:
-    from PIL import Image
-    from PIL.ExifTags import TAGS
-    EXIF_AVAILABLE = True
-except ImportError:
-    EXIF_AVAILABLE = False
-
-try:
-    from mutagen import File as MutagenFile
-    MUTAGEN_AVAILABLE = True
-except ImportError:
-    MUTAGEN_AVAILABLE = False
-
 
 class DocumentMetadataExtractorTool(BaseTool):
     """
@@ -156,10 +118,12 @@ class DocumentMetadataExtractorTool(BaseTool):
     
     async def _extract_pdf_metadata(self, file_path: Path, detailed: bool) -> Dict:
         """Extract PDF metadata"""
-        
-        if not PDF_AVAILABLE:
+
+        try:
+            from PyPDF2 import PdfReader
+        except ImportError:
             return {"error": "PyPDF2 not installed"}
-        
+
         try:
             reader = PdfReader(str(file_path))
             info = reader.metadata
@@ -200,10 +164,12 @@ class DocumentMetadataExtractorTool(BaseTool):
     
     async def _extract_docx_metadata(self, file_path: Path, detailed: bool) -> Dict:
         """Extract DOCX metadata"""
-        
-        if not DOCX_AVAILABLE:
+
+        try:
+            from docx import Document
+        except ImportError:
             return {"error": "python-docx not installed"}
-        
+
         try:
             doc = Document(str(file_path))
             props = doc.core_properties
@@ -236,10 +202,12 @@ class DocumentMetadataExtractorTool(BaseTool):
     
     async def _extract_pptx_metadata(self, file_path: Path, detailed: bool) -> Dict:
         """Extract PPTX metadata"""
-        
-        if not PPTX_AVAILABLE:
+
+        try:
+            from pptx import Presentation
+        except ImportError:
             return {"error": "python-pptx not installed"}
-        
+
         try:
             prs = Presentation(str(file_path))
             props = prs.core_properties
@@ -269,10 +237,12 @@ class DocumentMetadataExtractorTool(BaseTool):
     
     async def _extract_xlsx_metadata(self, file_path: Path, detailed: bool) -> Dict:
         """Extract XLSX metadata"""
-        
-        if not XLSX_AVAILABLE:
+
+        try:
+            from openpyxl import load_workbook
+        except ImportError:
             return {"error": "openpyxl not installed"}
-        
+
         try:
             wb = load_workbook(str(file_path), data_only=True)
             props = wb.properties
@@ -305,13 +275,16 @@ class DocumentMetadataExtractorTool(BaseTool):
     
     async def _extract_image_metadata(self, file_path: Path, detailed: bool) -> Dict:
         """Extract image EXIF metadata"""
-        
-        if not EXIF_AVAILABLE:
+
+        try:
+            from PIL import Image
+            from PIL.ExifTags import TAGS
+        except ImportError:
             return {"error": "Pillow not installed"}
-        
+
         try:
             img = Image.open(str(file_path))
-            
+
             metadata = {
                 "type": "Image",
                 "format": img.format,
@@ -320,7 +293,7 @@ class DocumentMetadataExtractorTool(BaseTool):
                 "height": img.height,
                 "megapixels": round((img.width * img.height) / 1_000_000, 2)
             }
-            
+
             # EXIF data
             exif_data = img._getexif()
             if exif_data and detailed:
@@ -341,10 +314,12 @@ class DocumentMetadataExtractorTool(BaseTool):
     
     async def _extract_audio_metadata(self, file_path: Path, detailed: bool) -> Dict:
         """Extract audio metadata"""
-        
-        if not MUTAGEN_AVAILABLE:
+
+        try:
+            from mutagen import File as MutagenFile
+        except ImportError:
             return {"error": "mutagen not installed"}
-        
+
         try:
             audio = MutagenFile(str(file_path))
             
