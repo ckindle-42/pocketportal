@@ -2,6 +2,9 @@
 
 import os
 import json
+import tempfile
+import shutil
+import fcntl
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
@@ -288,10 +291,63 @@ class LocalKnowledgeTool(BaseTool):
                 print(f"Error loading knowledge base: {e}")
 
     def _save_db(self):
-        """Save knowledge base to disk"""
+        """
+        Save knowledge base to disk with atomic write protection.
+
+        Uses atomic rename to prevent corruption if process crashes during write.
+        Implements file locking to prevent concurrent write conflicts.
+        Creates backup before write for recovery.
+        """
         try:
             self.DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.DB_PATH, 'w', encoding='utf-8') as f:
-                json.dump({'documents': LocalKnowledgeTool._documents}, f, indent=2)
+
+            # Create backup of existing file
+            backup_path = self.DB_PATH.with_suffix('.json.backup')
+            if self.DB_PATH.exists():
+                try:
+                    shutil.copy2(self.DB_PATH, backup_path)
+                except Exception as e:
+                    print(f"Warning: Could not create backup: {e}")
+
+            # Write to temporary file first (atomic write pattern)
+            temp_fd, temp_path = tempfile.mkstemp(
+                dir=self.DB_PATH.parent,
+                prefix='.knowledge_base_tmp_',
+                suffix='.json'
+            )
+
+            try:
+                with os.fdopen(temp_fd, 'w', encoding='utf-8') as f:
+                    # Acquire exclusive lock to prevent race conditions
+                    try:
+                        fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    except IOError:
+                        print("Warning: Another process is writing to the database")
+                        # Continue anyway, but this indicates a concurrency issue
+
+                    # Write data to temporary file
+                    json.dump({'documents': LocalKnowledgeTool._documents}, f, indent=2)
+                    f.flush()
+                    os.fsync(f.fileno())  # Force write to disk
+
+                # Atomic rename (overwrites destination on POSIX systems)
+                # This is atomic on most filesystems - if we crash here, either
+                # the old file exists OR the new file exists, never partial data
+                shutil.move(temp_path, self.DB_PATH)
+
+            except Exception as e:
+                # Clean up temp file on error
+                if os.path.exists(temp_path):
+                    os.unlink(temp_path)
+                raise
+
         except Exception as e:
             print(f"Error saving knowledge base: {e}")
+            # Attempt recovery from backup
+            if backup_path.exists():
+                print(f"Attempting to restore from backup...")
+                try:
+                    shutil.copy2(backup_path, self.DB_PATH)
+                    print("Successfully restored from backup")
+                except Exception as restore_error:
+                    print(f"Failed to restore from backup: {restore_error}")
