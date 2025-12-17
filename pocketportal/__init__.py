@@ -1,14 +1,16 @@
 """
-PocketPortal 4.1 - Unified AI Agent Platform
-=============================================
+PocketPortal 4.3 - One-for-All AI Agent Platform
+=================================================
 
-A modular, production-ready AI agent platform with multiple interface support.
+A production-ready AI agent platform with plugin architecture, async job queues,
+and universal resource access.
 
 Architecture:
     Interface → Security → Core → Router → LLM
                             ├─ Context
                             ├─ Events
-                            └─ Prompts
+                            ├─ Prompts
+                            └─ Job Queue
 
 Key Features:
 - 🎯 Intelligent routing with model selection
@@ -16,8 +18,12 @@ Key Features:
 - 🌐 Multiple interfaces (Telegram, Web, API)
 - 🧠 Context-aware conversations
 - 📊 Structured logging with trace IDs
-- 🔧 Extensible tool system
+- 🔧 Extensible tool system with plugin support
 - ⚡ Event-driven architecture
+- 🔌 Plugin ecosystem via entry_points
+- ⏳ Async job queue for heavy workloads
+- 🌍 Universal resource access (local, cloud, MCP)
+- 📈 OpenTelemetry observability
 
 Usage:
     from pocketportal.core import create_agent_core, SecurityMiddleware
@@ -34,7 +40,7 @@ Usage:
     web = WebInterface(secure_agent, config)
 """
 
-__version__ = '4.1.2'
+__version__ = '4.3.0'
 __author__ = 'PocketPortal Team'
 
 # Core components

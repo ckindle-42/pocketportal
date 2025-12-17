@@ -1,17 +1,24 @@
 """
 Enhanced Tool Registry - Auto-discovery and management of agent tools
-Includes validation, error handling, and performance tracking
+Includes validation, error handling, performance tracking, and plugin support via entry_points
 """
 
 import importlib
 import inspect
 import logging
 import pkgutil
+import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from datetime import datetime
-import sys
+
+# Try to import importlib.metadata (Python 3.8+)
+try:
+    from importlib import metadata as importlib_metadata
+except ImportError:
+    # Fallback for older Python versions
+    import importlib_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -57,8 +64,9 @@ class ToolRegistry:
 
     def discover_and_load(self) -> tuple[int, int]:
         """
-        Auto-discover and load all tools from tool directories.
-        Uses pkgutil.walk_packages for dynamic discovery.
+        Auto-discover and load all tools from:
+        1. Internal tools (pkgutil.walk_packages)
+        2. External plugins (entry_points)
         Returns (loaded_count, failed_count)
         """
 
@@ -66,9 +74,33 @@ class ToolRegistry:
         loaded = 0
         failed = 0
 
-        # Dynamic tool discovery using pkgutil
-        # Walk through all subdirectories and discover tool classes
         logger.info(f"Scanning for tools in {tools_dir}")
+
+        # 1. Discover internal tools using pkgutil
+        internal_loaded, internal_failed = self._discover_internal_tools(tools_dir)
+        loaded += internal_loaded
+        failed += internal_failed
+
+        # 2. Discover external plugins using entry_points
+        plugin_loaded, plugin_failed = self._discover_entry_point_tools()
+        loaded += plugin_loaded
+        failed += plugin_failed
+
+        # Log summary
+        logger.info(f"Tool registry: {loaded} loaded ({internal_loaded} internal, {plugin_loaded} plugins), {failed} failed")
+
+        if failed > 0:
+            logger.warning(f"Failed tools: {[t['module'] for t in self.failed_tools]}")
+
+        return loaded, failed
+
+    def _discover_internal_tools(self, tools_dir: Path) -> tuple[int, int]:
+        """
+        Discover internal tools using pkgutil.walk_packages.
+        Returns (loaded_count, failed_count)
+        """
+        loaded = 0
+        failed = 0
 
         # Import base_tool to get BaseTool class for isinstance check
         from .base_tool import BaseTool
@@ -168,11 +200,93 @@ class ToolRegistry:
                     'type': type(e).__name__
                 })
 
-        # Log summary
-        logger.info(f"Tool registry: {loaded} loaded, {failed} failed")
+        return loaded, failed
 
-        if failed > 0:
-            logger.warning(f"Failed tools: {[t['module'] for t in self.failed_tools]}")
+    def _discover_entry_point_tools(self) -> tuple[int, int]:
+        """
+        Discover external plugin tools using Python entry_points.
+        Looks for entry points in the 'pocketportal.tools' group.
+        Returns (loaded_count, failed_count)
+        """
+        loaded = 0
+        failed = 0
+
+        try:
+            # Get entry points for pocketportal.tools
+            if sys.version_info >= (3, 10):
+                # Python 3.10+ uses entry_points().select()
+                entry_points = importlib_metadata.entry_points()
+                if hasattr(entry_points, 'select'):
+                    plugin_entry_points = entry_points.select(group='pocketportal.tools')
+                else:
+                    # Fallback for some 3.10 versions
+                    plugin_entry_points = entry_points.get('pocketportal.tools', [])
+            else:
+                # Python 3.8-3.9 uses entry_points() directly
+                all_entry_points = importlib_metadata.entry_points()
+                plugin_entry_points = all_entry_points.get('pocketportal.tools', [])
+
+            if not plugin_entry_points:
+                logger.debug("No plugin tools found via entry_points")
+                return 0, 0
+
+            logger.info(f"Found {len(plugin_entry_points)} plugin tool(s) via entry_points")
+
+            # Load each plugin tool
+            from .base_tool import BaseTool
+
+            for entry_point in plugin_entry_points:
+                try:
+                    # Load the tool class
+                    tool_class = entry_point.load()
+
+                    # Validate it's a BaseTool subclass
+                    if not (inspect.isclass(tool_class) and issubclass(tool_class, BaseTool)):
+                        raise TypeError(f"{entry_point.name} is not a valid BaseTool subclass")
+
+                    # Instantiate the tool
+                    tool_instance = tool_class()
+
+                    # Validate tool has required attributes
+                    if not hasattr(tool_instance, 'metadata'):
+                        raise AttributeError(f"Plugin tool {entry_point.name} missing 'metadata' attribute")
+
+                    if not hasattr(tool_instance, 'execute'):
+                        raise AttributeError(f"Plugin tool {entry_point.name} missing 'execute' method")
+
+                    # Register tool
+                    tool_name = tool_instance.metadata.name
+                    self.tools[tool_name] = tool_instance
+
+                    # Initialize stats
+                    self.tool_stats[tool_name] = ToolExecutionStats()
+
+                    # Add to category
+                    category = tool_instance.metadata.category.value
+                    if category in self.tool_categories:
+                        self.tool_categories[category].append(tool_name)
+                    else:
+                        # Create new category if not exists
+                        self.tool_categories[category] = [tool_name]
+
+                    loaded += 1
+                    logger.info(f"Loaded plugin tool: {tool_name} ({category}) from {entry_point.value}")
+
+                except Exception as e:
+                    failed += 1
+                    error_msg = f"Failed to load plugin {entry_point.name}: {str(e)}"
+                    logger.error(f"Plugin error: {error_msg}")
+                    self.failed_tools.append({
+                        'module': f'plugin:{entry_point.value}',
+                        'class': entry_point.name,
+                        'error': error_msg,
+                        'type': type(e).__name__
+                    })
+
+        except Exception as e:
+            logger.error(f"Error discovering entry_points: {e}")
+            # Don't fail the entire discovery process
+            return 0, 0
 
         return loaded, failed
 

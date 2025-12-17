@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pocketportal"
-version = "4.1.2"
-description = "Modular AI agent platform with intelligent routing and multi-interface support"
+version = "4.3.0"
+description = "One-for-all AI agent platform with plugin architecture, async queues, and universal resource access"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.11"
@@ -114,6 +114,15 @@ mcp = [
     "mcp==0.9.0",
 ]
 
+# Observability and monitoring
+observability = [
+    "opentelemetry-api==1.21.0",
+    "opentelemetry-sdk==1.21.0",
+    "opentelemetry-exporter-otlp==1.21.0",
+    "opentelemetry-instrumentation-fastapi==0.42b0",
+    "prometheus-client==0.19.0",
+]
+
 # Development dependencies
 dev = [
     "pytest==7.4.3",
@@ -131,7 +140,7 @@ security = [
 
 # Complete installation with all features
 all = [
-    "pocketportal[tools,data,documents,audio,knowledge,automation,browser,mcp,security]",
+    "pocketportal[tools,data,documents,audio,knowledge,automation,browser,mcp,security,observability]",
 ]
 
 [project.urls]
@@ -170,3 +179,10 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+markers = [
+    "unit: Fast unit tests with no external dependencies (no I/O, no network, no database)",
+    "integration: Integration tests requiring Docker, network, or database connections",
+    "slow: Tests taking more than 5 seconds to complete",
+    "requires_llm: Tests that require a running LLM backend",
+    "requires_docker: Tests that require Docker to be running",
+]

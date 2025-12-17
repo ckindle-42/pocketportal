@@ -1,5 +1,15 @@
 # Human-in-the-Loop Middleware
 
+## Quick Summary
+
+**Status:** ✅ Complete and Production-Ready
+**Version:** Implemented in v4.1.2+
+**Purpose:** Safety layer requiring admin approval for high-risk tools
+
+The Human-in-the-Loop (HITL) Middleware intercepts dangerous tool execution (shell commands, git push, docker operations) and requires administrator approval via Telegram before proceeding. This prevents accidental data loss, unauthorized deployments, and security vulnerabilities.
+
+---
+
 ## Overview
 
 The Human-in-the-Loop (HITL) Middleware adds a critical safety layer to PocketPortal by requiring administrator approval before executing high-risk tools. This prevents dangerous operations from running automatically and gives you full control over sensitive actions.
