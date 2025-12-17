@@ -348,8 +348,8 @@ def load_and_validate_config() -> Optional[AgentConfig]:
 
 def generate_example_env():
     """Generate example .env file"""
-    
-    example = """# Telegram AI Agent v3.0 Configuration
+
+    example = """# PocketPortal 4.1 Configuration
 # Copy this to .env and fill in your values
 
 # ============================================================================

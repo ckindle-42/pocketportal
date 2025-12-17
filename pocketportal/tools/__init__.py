@@ -77,24 +77,24 @@ class ToolRegistry:
         # Tool module definitions (hardcoded for reliability)
         tool_modules = {
             # Data Tools (moved from utilities for better organization)
-            'data_tools.qr_generator': 'QRGeneratorTool',
-            'data_tools.text_transformer': 'TextTransformerTool',
-            'data_tools.file_compressor': 'FileCompressorTool',
-            'data_tools.math_visualizer': 'MathVisualizerTool',
-            'data_tools.csv_analyzer': 'CSVAnalyzerTool',
+            'pocketportal.tools.data_tools.qr_generator': 'QRGeneratorTool',
+            'pocketportal.tools.data_tools.text_transformer': 'TextTransformerTool',
+            'pocketportal.tools.data_tools.file_compressor': 'FileCompressorTool',
+            'pocketportal.tools.data_tools.math_visualizer': 'MathVisualizerTool',
+            'pocketportal.tools.data_tools.csv_analyzer': 'CSVAnalyzerTool',
             # System Tools (moved from utilities - OS interaction)
-            'system_tools.clipboard_manager': 'ClipboardManagerTool',
+            'pocketportal.tools.system_tools.clipboard_manager': 'ClipboardManagerTool',
             # Web Tools
-            'web_tools.http_fetcher': 'HTTPFetcherTool',
+            'pocketportal.tools.web_tools.http_fetcher': 'HTTPFetcherTool',
             # Audio Tools
-            'audio_tools.audio_batch_transcriber': 'AudioBatchTranscriberTool',
+            'pocketportal.tools.audio_tools.audio_batch_transcriber': 'AudioBatchTranscriberTool',
             # Dev Tools
-            'dev_tools.python_env_manager': 'PythonEnvManagerTool',
+            'pocketportal.tools.dev_tools.python_env_manager': 'PythonEnvManagerTool',
             # Automation Tools
-            'automation_tools.job_scheduler': 'JobSchedulerTool',
-            'automation_tools.shell_safety': 'ShellSafetyTool',
+            'pocketportal.tools.automation_tools.job_scheduler': 'JobSchedulerTool',
+            'pocketportal.tools.automation_tools.shell_safety': 'ShellSafetyTool',
             # Knowledge Tools
-            'knowledge.local_knowledge': 'LocalKnowledgeTool',
+            'pocketportal.tools.knowledge.local_knowledge': 'LocalKnowledgeTool',
         }
         
         for module_path, class_name in tool_modules.items():

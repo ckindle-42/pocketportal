@@ -15,7 +15,7 @@ from typing import Optional
 import signal
 
 # Version info
-__version__ = "4.1.0"
+__version__ = "4.1.1"
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +25,9 @@ def setup_logging(level: str = "INFO", log_format: str = "text"):
     log_level = getattr(logging, level.upper(), logging.INFO)
 
     if log_format == "json":
-        # JSON logging would go here (requires structlog or similar)
-        fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        # Use structured logging format (compatible with core engine)
+        # The structured logger outputs JSON messages directly
+        fmt = "%(message)s"  # Just output the message (which will be JSON from StructuredLogger)
     else:
         fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
@@ -35,7 +36,8 @@ def setup_logging(level: str = "INFO", log_format: str = "text"):
         format=fmt,
         handlers=[
             logging.StreamHandler(sys.stdout),
-        ]
+        ],
+        force=True  # Ensure this overrides any previous basicConfig calls
     )
 
 

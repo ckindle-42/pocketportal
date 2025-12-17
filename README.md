@@ -143,8 +143,8 @@ Previous versions of PocketPortal (v3.x) used a monolithic architecture. Migrati
 
 ---
 
-**Version:** 4.1.0
-**Release Date:** December 2025
+**Version:** 4.1.1
+**Release Date:** December 2024
 **License:** MIT
 
 **Built with ❤️ for privacy, modularity, and control**

@@ -44,7 +44,7 @@ Usage:
 """
 
 # Core engine
-from .engine import AgentCoreV2, ProcessingResult, create_agent_core
+from .engine import AgentCore, ProcessingResult, create_agent_core
 
 # Components
 from .context_manager import ContextManager, Message
@@ -77,7 +77,7 @@ from .types import InterfaceType
 
 __all__ = [
     # Core engine
-    'AgentCoreV2',
+    'AgentCore',
     'ProcessingResult',
     'create_agent_core',
 
@@ -115,4 +115,4 @@ __all__ = [
     'InterfaceType',
 ]
 
-__version__ = '4.1.0'
+__version__ = '4.1.1'

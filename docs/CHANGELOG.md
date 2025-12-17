@@ -1,6 +1,54 @@
 # Changelog
 
-All notable changes to Telegram AI Agent.
+All notable changes to PocketPortal.
+
+---
+
+## [4.1.1] - 2024-12-17
+
+### Fixed
+- **Fragile Tool Discovery**: Updated tool registry to use fully qualified import paths (e.g., `pocketportal.tools.data_tools.qr_generator`) instead of relative imports, ensuring consistent behavior across different installation methods and execution contexts
+- **Naming Technical Debt**: Renamed `AgentCoreV2` to `AgentCore` across all modules for clarity and consistency
+- **Outdated Configuration References**: Updated config validator to reference "PocketPortal 4.1" instead of "Telegram AI Agent v3.0"
+- **Docstring Hygiene**: Replaced legacy "Telegram AI Agent" references with "PocketPortal" in documentation and code comments
+
+---
+
+## [4.1.0] - 2024-12-17
+
+### Added
+- **Pydantic Settings**: Type-safe configuration with validation at startup
+- **BaseInterface ABC**: Standardized interface contract for consistency
+- **Dynamic Tool Discovery**: Auto-detect tools without manual registration
+- **Unified CLI**: Single `pocketportal` command for all operations
+- **Deployment Configs**: Ready-to-use systemd and launchd configurations
+
+### Changed
+- Consolidated documentation in `docs/` directory
+- Platform-specific deployment scripts organized by OS
+- Updated installation scripts using modern `pyproject.toml`
+- Removed legacy v3.x artifacts and version conflicts
+
+---
+
+## [4.0.0] - 2024-12-16
+
+### Major Architectural Refactor
+
+- **Modular Architecture**: Truly interface-agnostic core that supports Telegram, Web, Slack, Discord, and API interfaces
+- **Dependency Injection**: Fully testable architecture without loading LLMs
+- **Structured Error Handling**: Custom exceptions (`PocketPortalError`, `ModelNotAvailableError`, `ToolExecutionError`, etc.) instead of string returns
+- **SQLite Rate Limiting**: Replaced JSON-based rate limiting to eliminate race conditions
+- **Context Management**: Unified conversation history shared across all interfaces
+- **Event Bus**: Real-time feedback system for progress indicators and spinners
+- **Structured Logging**: JSON logs with trace IDs for debugging
+- **Externalized Prompts**: Change prompts without redeploying
+- **Security Middleware**: Centralized security wrapper for all interfaces
+
+### Changed
+- Renamed from "Telegram AI Agent" to "PocketPortal"
+- Complete package restructure with clean separation of concerns
+- Core engine refactored from monolithic to modular design
 
 ---
 

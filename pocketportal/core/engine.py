@@ -65,7 +65,7 @@ class ProcessingResult:
     trace_id: Optional[str] = None
 
 
-class AgentCoreV2:
+class AgentCore:
     """
     Unified Agent Core - The Brain
 
@@ -526,7 +526,7 @@ class AgentCoreV2:
 # FACTORY FUNCTION
 # =============================================================================
 
-def create_agent_core(config: Dict[str, Any]) -> AgentCoreV2:
+def create_agent_core(config: Dict[str, Any]) -> AgentCore:
     """
     Factory function to create AgentCore with all dependencies
 
@@ -536,7 +536,7 @@ def create_agent_core(config: Dict[str, Any]) -> AgentCoreV2:
         config: Configuration dictionary
 
     Returns:
-        Initialized AgentCoreV2 instance
+        Initialized AgentCore instance
     """
     # Import tool registry here to avoid circular dependencies
     from pocketportal.tools import registry as tool_registry
@@ -573,7 +573,7 @@ def create_agent_core(config: Dict[str, Any]) -> AgentCoreV2:
     prompt_manager = PromptManager()
 
     # Create and return AgentCore
-    return AgentCoreV2(
+    return AgentCore(
         model_registry=model_registry,
         router=router,
         execution_engine=execution_engine,
