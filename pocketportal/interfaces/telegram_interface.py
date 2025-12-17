@@ -16,21 +16,25 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
     CommandHandler,
     MessageHandler,
+    CallbackQueryHandler,
     ContextTypes,
     filters
 )
 from telegram.constants import ChatAction
 
 # Import the unified core
-from pocketportal.core import AgentCoreV2, ProcessingResult
+from pocketportal.core import create_agent_core, ProcessingResult, EventBus
+
+# Import confirmation middleware
+from pocketportal.middleware import ToolConfirmationMiddleware, ConfirmationRequest
 
 # Import existing config and security
-from pocketportal.config import load_config
+from pocketportal.config.validator import load_and_validate_config
 from pocketportal.security.security_module import RateLimiter
 
 # Setup logging
@@ -90,11 +94,31 @@ class TelegramInterface:
                 'code': [m.strip() for m in self.config.model_pref_code.split(',') if m.strip()]
             }
         }
-        
-        # Initialize the unified core
+
+        # Initialize the unified core using factory function
         logger.info("Initializing AgentCore...")
-        self.agent_core = AgentCore(core_config)
-        
+        self.agent_core = create_agent_core(core_config)
+
+        # Initialize confirmation middleware if enabled
+        self.confirmation_middleware = None
+        self.admin_chat_id = self.config.tools_admin_chat_id or self.config.telegram_user_id
+
+        if self.config.tools_require_confirmation:
+            logger.info("Initializing Tool Confirmation Middleware...")
+            self.confirmation_middleware = ToolConfirmationMiddleware(
+                event_bus=self.agent_core.event_bus,
+                confirmation_sender=self._send_confirmation_request,
+                default_timeout=self.config.tools_confirmation_timeout
+            )
+
+            # Inject middleware into agent core
+            self.agent_core.confirmation_middleware = self.confirmation_middleware
+
+            logger.info(
+                f"Confirmation middleware enabled (admin_chat_id: {self.admin_chat_id}, "
+                f"timeout: {self.config.tools_confirmation_timeout}s)"
+            )
+
         # Telegram application
         self.application = None
         
@@ -115,7 +139,155 @@ class TelegramInterface:
     def _check_rate_limit(self, user_id: int) -> tuple[bool, Optional[str]]:
         """Check rate limiting"""
         return self.rate_limiter.check_limit(user_id)
-    
+
+    # ========================================================================
+    # CONFIRMATION MIDDLEWARE INTEGRATION
+    # ========================================================================
+
+    async def _send_confirmation_request(self, request: ConfirmationRequest):
+        """
+        Send a confirmation request to the admin via Telegram
+
+        This is called by the confirmation middleware when a high-risk tool
+        needs approval before execution.
+
+        Args:
+            request: The confirmation request to send
+        """
+        try:
+            # Format tool parameters for display
+            params_str = "\n".join([
+                f"  • {key}: {value}"
+                for key, value in request.parameters.items()
+            ])
+
+            message = (
+                f"⚠️ **Tool Confirmation Required**\n\n"
+                f"**Tool:** `{request.tool_name}`\n"
+                f"**User Chat:** {request.chat_id}\n"
+                f"**User ID:** {request.user_id or 'Unknown'}\n\n"
+                f"**Parameters:**\n{params_str}\n\n"
+                f"**Timeout:** {request.timeout_seconds}s\n\n"
+                f"This tool requires your approval before execution. "
+                f"Please review and approve or deny."
+            )
+
+            # Create inline keyboard with Approve/Deny buttons
+            keyboard = [
+                [
+                    InlineKeyboardButton(
+                        "✅ Approve",
+                        callback_data=f"confirm_approve:{request.confirmation_id}"
+                    ),
+                    InlineKeyboardButton(
+                        "❌ Deny",
+                        callback_data=f"confirm_deny:{request.confirmation_id}"
+                    )
+                ]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            # Send to admin chat
+            await self.application.bot.send_message(
+                chat_id=self.admin_chat_id,
+                text=message,
+                parse_mode='Markdown',
+                reply_markup=reply_markup
+            )
+
+            logger.info(
+                f"Confirmation request sent to admin: {request.confirmation_id}",
+                extra={
+                    'tool_name': request.tool_name,
+                    'confirmation_id': request.confirmation_id,
+                    'admin_chat_id': self.admin_chat_id
+                }
+            )
+
+        except Exception as e:
+            logger.error(
+                f"Failed to send confirmation request: {e}",
+                exc_info=True
+            )
+            raise
+
+    async def _handle_confirmation_callback(
+        self,
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE
+    ):
+        """
+        Handle confirmation approval/denial callbacks
+
+        This is called when the admin clicks Approve or Deny on a confirmation request.
+        """
+        query = update.callback_query
+        await query.answer()
+
+        # Check authorization
+        if query.from_user.id != self.admin_chat_id:
+            await query.edit_message_text("⛔ Unauthorized")
+            return
+
+        # Parse callback data
+        callback_data = query.data
+        if not callback_data:
+            return
+
+        try:
+            action, confirmation_id = callback_data.split(':', 1)
+
+            if action == "confirm_approve":
+                # Approve the confirmation
+                success = self.confirmation_middleware.approve(
+                    confirmation_id,
+                    approver_id=str(query.from_user.id)
+                )
+
+                if success:
+                    await query.edit_message_text(
+                        f"✅ **Tool Execution Approved**\n\n"
+                        f"Confirmation ID: `{confirmation_id}`\n\n"
+                        f"The tool will now be executed.",
+                        parse_mode='Markdown'
+                    )
+                    logger.info(f"Tool execution approved: {confirmation_id}")
+                else:
+                    await query.edit_message_text(
+                        f"⚠️ **Confirmation Not Found**\n\n"
+                        f"The confirmation may have already been processed or expired.",
+                        parse_mode='Markdown'
+                    )
+
+            elif action == "confirm_deny":
+                # Deny the confirmation
+                success = self.confirmation_middleware.deny(
+                    confirmation_id,
+                    denier_id=str(query.from_user.id)
+                )
+
+                if success:
+                    await query.edit_message_text(
+                        f"❌ **Tool Execution Denied**\n\n"
+                        f"Confirmation ID: `{confirmation_id}`\n\n"
+                        f"The tool execution has been cancelled.",
+                        parse_mode='Markdown'
+                    )
+                    logger.info(f"Tool execution denied: {confirmation_id}")
+                else:
+                    await query.edit_message_text(
+                        f"⚠️ **Confirmation Not Found**\n\n"
+                        f"The confirmation may have already been processed or expired.",
+                        parse_mode='Markdown'
+                    )
+
+        except ValueError as e:
+            logger.error(f"Invalid callback data: {callback_data}", exc_info=True)
+            await query.edit_message_text("⚠️ Invalid callback data")
+        except Exception as e:
+            logger.error(f"Error handling confirmation callback: {e}", exc_info=True)
+            await query.edit_message_text(f"⚠️ Error: {str(e)}")
+
     # ========================================================================
     # COMMAND HANDLERS
     # ========================================================================
@@ -308,28 +480,43 @@ class TelegramInterface:
     
     def run(self):
         """Start the Telegram bot"""
-        
+
         logger.info("Building Telegram application...")
-        
+
         # Create application
         self.application = Application.builder().token(self.bot_token).build()
-        
+
         # Register command handlers
         self.application.add_handler(CommandHandler("start", self.start_command))
         self.application.add_handler(CommandHandler("help", self.help_command))
         self.application.add_handler(CommandHandler("tools", self.tools_command))
         self.application.add_handler(CommandHandler("stats", self.stats_command))
         self.application.add_handler(CommandHandler("health", self.health_command))
-        
+
+        # Register callback handler for confirmations
+        if self.confirmation_middleware:
+            self.application.add_handler(
+                CallbackQueryHandler(
+                    self._handle_confirmation_callback,
+                    pattern=r"^confirm_(approve|deny):"
+                )
+            )
+            logger.info("Confirmation callback handler registered")
+
         # Register message handler
         self.application.add_handler(
             MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_text_message)
         )
-        
+
+        # Start confirmation middleware
+        if self.confirmation_middleware:
+            asyncio.create_task(self.confirmation_middleware.start())
+            logger.info("Confirmation middleware started")
+
         logger.info("=" * 60)
         logger.info("🚀 Telegram Bot Starting!")
         logger.info("=" * 60)
-        
+
         # Start polling
         self.application.run_polling(allowed_updates=Update.ALL_TYPES)
 
