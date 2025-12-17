@@ -89,7 +89,8 @@ class AgentCoreV2:
         context_manager: ContextManager,
         event_bus: EventBus,
         prompt_manager: PromptManager,
-        config: Dict[str, Any]
+        config: Dict[str, Any],
+        confirmation_middleware: Optional['ToolConfirmationMiddleware'] = None
     ):
         """
         Initialize the unified core with dependency injection
@@ -102,6 +103,7 @@ class AgentCoreV2:
             event_bus: Event bus for async feedback
             prompt_manager: System prompt manager
             config: Configuration dictionary
+            confirmation_middleware: Optional middleware for human-in-the-loop confirmations
         """
         self.config = config
         self.start_time = datetime.now()
@@ -113,6 +115,7 @@ class AgentCoreV2:
         self.context_manager = context_manager
         self.event_bus = event_bus
         self.prompt_manager = prompt_manager
+        self.confirmation_middleware = confirmation_middleware
 
         # Event emitter helper
         self.events = EventEmitter(self.event_bus)
@@ -135,7 +138,8 @@ class AgentCoreV2:
             routing_strategy=router.strategy.value if hasattr(router, 'strategy') else 'unknown',
             tools_loaded=loaded,
             tools_failed=failed,
-            models_available=len(model_registry.models)
+            models_available=len(model_registry.models),
+            confirmation_middleware_enabled=confirmation_middleware is not None
         )
 
     async def process_message(
@@ -428,12 +432,30 @@ class AgentCoreV2:
     async def execute_tool(
         self,
         tool_name: str,
-        parameters: Dict[str, Any]
+        parameters: Dict[str, Any],
+        chat_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        trace_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Execute a specific tool directly
 
-        This is useful for direct tool execution without LLM reasoning
+        This is useful for direct tool execution without LLM reasoning.
+        If the tool requires confirmation and confirmation middleware is enabled,
+        this method will request approval before executing.
+
+        Args:
+            tool_name: Name of the tool to execute
+            parameters: Tool parameters
+            chat_id: Optional chat ID for confirmation context
+            user_id: Optional user ID for confirmation context
+            trace_id: Optional trace ID for logging
+
+        Returns:
+            Tool execution result
+
+        Raises:
+            ToolExecutionError: If tool not found, confirmation denied, or execution fails
         """
         tool = self.tool_registry.get_tool(tool_name)
 
@@ -441,6 +463,43 @@ class AgentCoreV2:
             raise ToolExecutionError(
                 tool_name,
                 f'Tool not found: {tool_name}'
+            )
+
+        # Check if tool requires confirmation
+        requires_confirmation = getattr(tool.metadata, 'requires_confirmation', False)
+
+        if requires_confirmation and self.confirmation_middleware:
+            logger.info(
+                f"Tool {tool_name} requires confirmation, requesting approval...",
+                tool=tool_name,
+                chat_id=chat_id
+            )
+
+            # Request confirmation (this will block until approved/denied/timeout)
+            approved = await self.confirmation_middleware.request_confirmation(
+                tool_name=tool_name,
+                parameters=parameters,
+                chat_id=chat_id or "unknown",
+                user_id=user_id,
+                trace_id=trace_id
+            )
+
+            if not approved:
+                logger.warning(
+                    f"Tool execution denied: {tool_name}",
+                    tool=tool_name,
+                    chat_id=chat_id
+                )
+                raise ToolExecutionError(
+                    tool_name,
+                    "Tool execution denied by administrator",
+                    details={'parameters': parameters, 'requires_confirmation': True}
+                )
+
+            logger.info(
+                f"Tool execution approved: {tool_name}",
+                tool=tool_name,
+                chat_id=chat_id
             )
 
         try:

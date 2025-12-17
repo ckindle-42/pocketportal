@@ -35,6 +35,9 @@ class EventType(Enum):
     TOOL_PROGRESS = "tool_progress"
     TOOL_COMPLETED = "tool_completed"
     TOOL_FAILED = "tool_failed"
+    TOOL_CONFIRMATION_REQUIRED = "tool_confirmation_required"
+    TOOL_CONFIRMATION_APPROVED = "tool_confirmation_approved"
+    TOOL_CONFIRMATION_DENIED = "tool_confirmation_denied"
 
     ROUTING_DECISION = "routing_decision"
     FALLBACK_TRIGGERED = "fallback_triggered"

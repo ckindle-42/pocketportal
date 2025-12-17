@@ -65,6 +65,16 @@ class AgentConfig(BaseModel):
         default=True,
         description="Require confirmation for dangerous operations"
     )
+    tools_admin_chat_id: Optional[int] = Field(
+        default=None,
+        description="Admin chat ID for tool confirmations (uses telegram_user_id if not set)"
+    )
+    tools_confirmation_timeout: int = Field(
+        default=300,
+        ge=30,
+        le=3600,
+        description="Timeout in seconds for tool confirmation requests"
+    )
     max_parallel_tools: int = Field(
         default=3,
         ge=1,
