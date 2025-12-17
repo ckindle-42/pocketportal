@@ -6,6 +6,10 @@ Protects against abuse and malicious inputs
 import time
 import html
 import re
+import json
+import os
+import tempfile
+import shutil
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 from pathlib import Path
@@ -22,20 +26,33 @@ class RateLimiter:
     """
     Per-user rate limiting with sliding window algorithm.
     Prevents spam and abuse of the agent.
+
+    SECURITY FIX: Now persists rate limit data to disk to prevent
+    malicious users from bypassing limits by forcing restarts.
     """
-    
-    def __init__(self, max_requests: int = 30, window_seconds: int = 60):
+
+    def __init__(self, max_requests: int = 30, window_seconds: int = 60,
+                 persist_path: Optional[Path] = None):
         """
         Initialize rate limiter.
-        
+
         Args:
             max_requests: Maximum requests allowed per window
             window_seconds: Window duration in seconds
+            persist_path: Path to persist rate limit data (prevents bypass via restart)
         """
         self.max_requests = max_requests
         self.window = window_seconds
         self.requests: Dict[int, List[float]] = defaultdict(list)
         self.violations: Dict[int, int] = defaultdict(int)
+
+        # Persistent storage to prevent reset-bypass attacks
+        self.persist_path = persist_path or Path(
+            os.getenv('RATE_LIMIT_DATA_DIR', 'data')
+        ) / 'rate_limits.json'
+
+        # Load existing rate limit data
+        self._load_state()
     
     def check_limit(self, user_id: int) -> Tuple[bool, Optional[str]]:
         """
@@ -60,18 +77,24 @@ class RateLimiter:
         if len(user_requests) >= self.max_requests:
             self.violations[user_id] += 1
             wait_time = int(user_requests[0] + self.window - now)
-            
+
             logger.warning(
                 f"Rate limit exceeded for user {user_id} "
                 f"({len(user_requests)}/{self.max_requests} requests)"
             )
             
+            # Persist violation immediately
+            self._save_state()
+
             return False, f"â±ï¸ Rate limit exceeded. Please wait {wait_time} seconds."
         
         # Add current request
         user_requests.append(now)
         self.requests[user_id] = user_requests[-self.max_requests:]
-        
+
+        # Persist state after each check (prevent bypass via restart)
+        self._save_state()
+
         return True, None
     
     def get_remaining(self, user_id: int) -> int:
@@ -91,23 +114,98 @@ class RateLimiter:
         """Reset rate limit for specific user"""
         self.requests[user_id] = []
         self.violations[user_id] = 0
+        self._save_state()
     
     def get_stats(self, user_id: int) -> Dict[str, int]:
         """Get statistics for a user"""
         now = time.time()
         user_requests = self.requests[user_id]
-        
+
         recent_requests = [
-            req for req in user_requests 
+            req for req in user_requests
             if now - req < self.window
         ]
-        
+
         return {
             'total_requests': len(user_requests),
             'recent_requests': len(recent_requests),
             'remaining': self.max_requests - len(recent_requests),
             'violations': self.violations[user_id]
         }
+
+    def _load_state(self):
+        """
+        Load rate limit state from disk.
+        Prevents malicious users from bypassing limits via restart.
+        """
+        if not self.persist_path.exists():
+            return
+
+        try:
+            with open(self.persist_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            # Convert string keys back to integers
+            self.requests = defaultdict(list, {
+                int(k): v for k, v in data.get('requests', {}).items()
+            })
+            self.violations = defaultdict(int, {
+                int(k): v for k, v in data.get('violations', {}).items()
+            })
+
+            # Clean up old requests outside the window
+            now = time.time()
+            for user_id in list(self.requests.keys()):
+                self.requests[user_id] = [
+                    req for req in self.requests[user_id]
+                    if now - req < self.window
+                ]
+                if not self.requests[user_id]:
+                    del self.requests[user_id]
+
+            logger.info(f"Loaded rate limit state for {len(self.requests)} users")
+
+        except Exception as e:
+            logger.error(f"Failed to load rate limit state: {e}")
+
+    def _save_state(self):
+        """
+        Save rate limit state to disk with atomic write.
+        Prevents data loss and ensures persistence across restarts.
+        """
+        try:
+            self.persist_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Prepare data for serialization
+            data = {
+                'requests': {str(k): v for k, v in self.requests.items()},
+                'violations': {str(k): v for k, v in self.violations.items()},
+                'timestamp': time.time()
+            }
+
+            # Atomic write pattern (same as knowledge base)
+            temp_fd, temp_path = tempfile.mkstemp(
+                dir=self.persist_path.parent,
+                prefix='.rate_limits_tmp_',
+                suffix='.json'
+            )
+
+            try:
+                with os.fdopen(temp_fd, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, indent=2)
+                    f.flush()
+                    os.fsync(f.fileno())
+
+                # Atomic rename
+                shutil.move(temp_path, self.persist_path)
+
+            except Exception as e:
+                if os.path.exists(temp_path):
+                    os.unlink(temp_path)
+                raise
+
+        except Exception as e:
+            logger.error(f"Failed to save rate limit state: {e}")
 
 
 # =============================================================================
