@@ -4,6 +4,25 @@ All notable changes to PocketPortal.
 
 ---
 
+## [4.1.2] - 2025-12-17
+
+### Documentation & Organizational Excellence
+- **Documentation Synchronization**: Updated `docs/architecture.md` to accurately reflect current file structure (removed references to deprecated `utilities/` folder, updated `telegram_ui.py` to `telegram_renderers.py`)
+- **README Synchronization**: Updated project structure in `README.md` to match `architecture.md`, ensuring consistency across all documentation
+- **Year Correction**: Fixed project birth year from 2024 to 2025 in all documentation
+- **Version Alignment**: Updated version references to 4.1.2 across `pyproject.toml`, `pocketportal/__init__.py`, and `README.md`
+- **Strategic Refactor Plan**: Archived `STRATEGIC_REFACTOR_PLAN.md` to `docs/archive/STRATEGIC_REFACTOR_PLAN_v4.2.md` with completion status, preventing developer confusion about pending vs. completed tasks
+
+### Changed
+- Renamed `telegram_ui.py` to `telegram_renderers.py` in documentation (reflects actual implementation)
+- Updated tools structure documentation to show current organization (`data_tools/`, `system_tools/` instead of deprecated `utilities/`)
+- Clarified that `docs/reports/` is gitignored and contains runtime artifacts
+
+### Impact
+This release achieves operational excellence by eliminating "cognitive debt" - the gap between documentation and reality. Developers can now trust that the documentation accurately reflects the codebase structure.
+
+---
+
 ## [4.1.1] - 2024-12-17
 
 ### Fixed
