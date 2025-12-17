@@ -1,0 +1,28 @@
+# Phase 2.5 Production Enhancements - Requirements
+# =================================================
+# Install these ON TOP OF Phase 1/2 requirements
+
+# ============================================================================
+# Docker Python Sandbox
+# ============================================================================
+docker==7.0.0  # Docker SDK for Python
+
+# ============================================================================
+# SQLite Knowledge Base
+# ============================================================================
+# No additional dependencies - uses built-in sqlite3
+# Already has: sentence-transformers (from Phase 1/2)
+
+# ============================================================================
+# Telegram Inline Keyboards
+# ============================================================================
+# No additional dependencies - uses existing python-telegram-bot
+
+# ============================================================================
+# Summary
+# ============================================================================
+# Required: Only 'docker' package for sandbox feature
+# Everything else reuses Phase 1/2 dependencies!
+
+# Install command:
+#   pip install docker==7.0.0
