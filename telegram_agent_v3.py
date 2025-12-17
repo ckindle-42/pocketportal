@@ -17,6 +17,7 @@ import logging
 import os
 import sys
 import tempfile
+import platform
 from pathlib import Path
 from typing import Optional, Dict, Any
 from datetime import datetime
@@ -64,6 +65,9 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Security constants
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB limit for file reading
 
 
 class TelegramAgent:
@@ -116,13 +120,35 @@ class TelegramAgent:
         
         # Telegram application
         self.application = None
-        
-        # System prompts
-        self.system_prompt = """You are a helpful AI assistant with access to various tools.
-When using tools, explain what you're doing and provide clear, concise results.
-Always prioritize user privacy and local processing."""
-        
+
         logger.info("Agent initialized successfully")
+
+    def _build_system_prompt(self) -> str:
+        """Build dynamic system prompt with contextual information"""
+
+        # Get current context
+        now = datetime.now()
+        tool_count = len(tool_registry.get_all_tools())
+        tool_names = [tool['name'] for tool in tool_registry.get_tool_list()[:10]]
+
+        prompt = f"""You are a helpful AI assistant with access to various tools.
+
+**Context:**
+- Current Date/Time: {now.strftime('%Y-%m-%d %H:%M:%S')} ({now.strftime('%A')})
+- System: {platform.system()} {platform.release()}
+- Architecture: {platform.machine()}
+- Tools Available: {tool_count} tools
+
+**Available Tools (sample):**
+{', '.join(tool_names)}{'...' if tool_count > 10 else ''}
+
+**Guidelines:**
+- When using tools, explain what you're doing and provide clear, concise results
+- Always prioritize user privacy and local processing
+- All operations run 100% locally on the user's hardware
+- Be helpful, accurate, and efficient"""
+
+        return prompt
     
     # ========================================================================
     # COMMAND HANDLERS
@@ -338,10 +364,10 @@ Everything runs locally - no data leaves your machine!"""
         await update.message.chat.send_action("typing")
         
         try:
-            # Execute with routing
+            # Execute with routing (using dynamic system prompt)
             result = await self.execution_engine.execute(
                 query=user_message,
-                system_prompt=self.system_prompt
+                system_prompt=self._build_system_prompt()
             )
             
             if result.success:
@@ -492,6 +518,15 @@ Everything runs locally - no data leaves your machine!"""
                     "â€¢ Show statistics for this data"
                 )
             elif document.file_name.endswith(('.txt', '.md')):
+                # Security: Check file size before reading to prevent OOM
+                file_size = doc_path.stat().st_size
+                if file_size > MAX_FILE_SIZE:
+                    await update.message.reply_text(
+                        f"❌ File too large to read directly (max {MAX_FILE_SIZE // (1024*1024)}MB).\n"
+                        f"File size: {file_size / (1024*1024):.2f}MB"
+                    )
+                    return
+
                 # Read text file asynchronously to avoid blocking
                 content = ""
                 if HAS_AIOFILES:
@@ -499,7 +534,12 @@ Everything runs locally - no data leaves your machine!"""
                         content = await f.read()
                 else:
                     # Fallback to sync reading if aiofiles not available
-                    content = doc_path.read_text(encoding='utf-8')
+                    # Use executor to avoid blocking the event loop
+                    loop = asyncio.get_running_loop()
+                    content = await loop.run_in_executor(
+                        None,
+                        lambda: doc_path.read_text(encoding='utf-8')
+                    )
 
                 await update.message.reply_text(
                     f"âœ… Text file received ({len(content)} chars)\n"
@@ -536,14 +576,14 @@ Everything runs locally - no data leaves your machine!"""
     # MAIN RUN METHOD
     # ========================================================================
     
-    async def run(self):
+    def run(self):
         """Start the agent"""
-        
+
         logger.info("Starting Telegram AI Agent v3.0...")
-        
+
         # Create application
         self.application = Application.builder().token(self.bot_token).build()
-        
+
         # Add command handlers
         self.application.add_handler(CommandHandler("start", self.start_command))
         self.application.add_handler(CommandHandler("help", self.help_command))
@@ -551,7 +591,7 @@ Everything runs locally - no data leaves your machine!"""
         self.application.add_handler(CommandHandler("health", self.health_command))
         self.application.add_handler(CommandHandler("models", self.models_command))
         self.application.add_handler(CommandHandler("strategy", self.strategy_command))
-        
+
         # Add message handlers
         self.application.add_handler(
             MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_text_message)
@@ -565,52 +605,38 @@ Everything runs locally - no data leaves your machine!"""
         self.application.add_handler(
             MessageHandler(filters.Document.ALL, self.handle_document)
         )
-        
-        # Initialize and start
-        await self.application.initialize()
-        await self.application.start()
-        await self.application.updater.start_polling(
-            allowed_updates=Update.ALL_TYPES
-        )
-        
-        logger.info("âœ… Agent started successfully!")
+
+        logger.info("âœ… Agent configured successfully!")
         logger.info(f"   Strategy: {self.routing_strategy.value}")
         logger.info(f"   Tools: {len(tool_registry.get_all_tools())}")
         logger.info(f"   Models: {len(self.model_registry.models)}")
-        logger.info("Polling for messages...")
-        
-        # Keep running
-        try:
-            while True:
-                await asyncio.sleep(1)
-        except KeyboardInterrupt:
-            logger.info("Shutdown requested...")
-        finally:
-            await self.application.stop()
-            await self.application.shutdown()
-            logger.info("Agent stopped")
+        logger.info("Starting polling for messages...")
+
+        # Use built-in run_polling for robust lifecycle management
+        # Handles signal interception (Ctrl+C), cleanup, and event loop automatically
+        self.application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 # ============================================================================
 # ENTRY POINT
 # ============================================================================
 
-async def main():
+def main():
     """Main entry point"""
-    
+
     # Ensure required directories exist
     Path("logs").mkdir(exist_ok=True)
     Path("screenshots").mkdir(exist_ok=True)
     Path("browser_data").mkdir(exist_ok=True)
-    
+
     # Create and run agent
     agent = TelegramAgent()
-    await agent.run()
+    agent.run()
 
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        main()
     except KeyboardInterrupt:
         print("\nShutdown requested by user")
     except Exception as e:
