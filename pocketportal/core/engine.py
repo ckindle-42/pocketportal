@@ -1,8 +1,8 @@
 """
-Unified Agent Core v2.0 - Refactored with Dependency Injection
-===============================================================
+Unified Agent Core - Refactored with Dependency Injection
+==========================================================
 
-This is the heart of PocketPortal 4.0 - truly modular and production-ready.
+This is the heart of PocketPortal - truly modular and production-ready.
 
 Key Improvements:
 1. ✅ Dependency Injection - All dependencies passed in, easily testable
@@ -23,6 +23,7 @@ Architecture:
 
 import asyncio
 import logging
+import time
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -36,14 +37,12 @@ from pocketportal.routing import (
     RoutingStrategy
 )
 
-# Import tool registry
-from pocketportal.tools import registry as tool_registry
-
 # Import new unified components
 from .context_manager import ContextManager
 from .event_bus import EventBus, EventType, EventEmitter
 from .prompt_manager import PromptManager
 from .structured_logger import get_logger, TraceContext
+from .types import InterfaceType
 from .exceptions import (
     PocketPortalError,
     ModelNotAvailableError,
@@ -68,7 +67,7 @@ class ProcessingResult:
 
 class AgentCoreV2:
     """
-    Unified Agent Core - The Brain (v2.0 Refactored)
+    Unified Agent Core - The Brain
 
     This class orchestrates all AI operations regardless of which interface
     the user is using. Telegram, Web, Slack, or API - all call this same core.
@@ -89,6 +88,7 @@ class AgentCoreV2:
         context_manager: ContextManager,
         event_bus: EventBus,
         prompt_manager: PromptManager,
+        tool_registry: 'ToolRegistry',
         config: Dict[str, Any],
         confirmation_middleware: Optional['ToolConfirmationMiddleware'] = None
     ):
@@ -102,6 +102,7 @@ class AgentCoreV2:
             context_manager: Conversation context manager
             event_bus: Event bus for async feedback
             prompt_manager: System prompt manager
+            tool_registry: Registry of available tools
             config: Configuration dictionary
             confirmation_middleware: Optional middleware for human-in-the-loop confirmations
         """
@@ -115,13 +116,13 @@ class AgentCoreV2:
         self.context_manager = context_manager
         self.event_bus = event_bus
         self.prompt_manager = prompt_manager
+        self.tool_registry = tool_registry
         self.confirmation_middleware = confirmation_middleware
 
         # Event emitter helper
         self.events = EventEmitter(self.event_bus)
 
-        # Tool registry (reuse existing)
-        self.tool_registry = tool_registry
+        # Load tools from registry
         loaded, failed = self.tool_registry.discover_and_load()
 
         # Statistics tracking
@@ -134,7 +135,7 @@ class AgentCoreV2:
         }
 
         logger.info(
-            "AgentCore v2.0 initialized successfully",
+            "AgentCore initialized successfully",
             routing_strategy=router.strategy.value if hasattr(router, 'strategy') else 'unknown',
             tools_loaded=loaded,
             tools_failed=failed,
@@ -146,7 +147,7 @@ class AgentCoreV2:
         self,
         chat_id: str,
         message: str,
-        interface: str = "unknown",
+        interface: InterfaceType = InterfaceType.UNKNOWN,
         user_context: Optional[Dict] = None,
         files: Optional[List[Any]] = None
     ) -> ProcessingResult:
@@ -159,7 +160,7 @@ class AgentCoreV2:
         Args:
             chat_id: Unique identifier for this conversation
             message: The user's message text (already sanitized by SecurityMiddleware)
-            interface: Source interface ("telegram", "web", "slack", etc.)
+            interface: Source interface (InterfaceType enum)
             user_context: Optional context about the user/session
             files: Optional list of attached files
 
@@ -169,7 +170,7 @@ class AgentCoreV2:
         Raises:
             PocketPortalError: On processing failures
         """
-        start_time = datetime.now()
+        start_time = time.perf_counter()
         user_context = user_context or {}
 
         # Create trace context for this request
@@ -177,14 +178,15 @@ class AgentCoreV2:
             try:
                 # Update statistics
                 self.stats['messages_processed'] += 1
-                if interface not in self.stats['by_interface']:
-                    self.stats['by_interface'][interface] = 0
-                self.stats['by_interface'][interface] += 1
+                interface_key = interface.value
+                if interface_key not in self.stats['by_interface']:
+                    self.stats['by_interface'][interface_key] = 0
+                self.stats['by_interface'][interface_key] += 1
 
                 logger.info(
                     "Processing message",
                     chat_id=chat_id,
-                    interface=interface,
+                    interface=interface.value,
                     message_length=len(message)
                 )
 
@@ -196,10 +198,10 @@ class AgentCoreV2:
 
                 # Step 2: Save user message IMMEDIATELY (before processing)
                 # This ensures we don't lose the user's message if processing crashes
-                await self._save_user_message(chat_id, message, interface)
+                await self._save_user_message(chat_id, message, interface.value)
 
                 # Step 3: Build system prompt from templates
-                system_prompt = self._build_system_prompt(interface, user_context)
+                system_prompt = self._build_system_prompt(interface.value, user_context)
 
                 # Step 4: Get available tools
                 available_tools = [t.metadata.name for t in self.tool_registry.get_all_tools()]
@@ -214,10 +216,10 @@ class AgentCoreV2:
                 )
 
                 # Step 6: Save assistant response (after successful generation)
-                await self._save_assistant_response(chat_id, result.content, interface)
+                await self._save_assistant_response(chat_id, result.content, interface.value)
 
                 # Track execution time
-                execution_time = (datetime.now() - start_time).total_seconds()
+                execution_time = time.perf_counter() - start_time
                 self.stats['total_execution_time'] += execution_time
 
                 # Extract tools used
@@ -252,8 +254,8 @@ class AgentCoreV2:
                     warnings=[],
                     metadata={
                         'chat_id': chat_id,
-                        'interface': interface,
-                        'timestamp': start_time.isoformat(),
+                        'interface': interface.value,
+                        'timestamp': datetime.now().isoformat(),
                         'routing_strategy': self.router.strategy.value if hasattr(self.router, 'strategy') else 'auto'
                     },
                     trace_id=trace_id
@@ -262,7 +264,7 @@ class AgentCoreV2:
             except PocketPortalError as e:
                 # Known error - log and rethrow
                 self.stats['errors'] += 1
-                execution_time = (datetime.now() - start_time).total_seconds()
+                execution_time = time.perf_counter() - start_time
 
                 logger.error(
                     "Processing failed",
@@ -283,7 +285,7 @@ class AgentCoreV2:
             except Exception as e:
                 # Unknown error - log and wrap
                 self.stats['errors'] += 1
-                execution_time = (datetime.now() - start_time).total_seconds()
+                execution_time = time.perf_counter() - start_time
 
                 logger.error(
                     "Unexpected error",
@@ -536,6 +538,9 @@ def create_agent_core(config: Dict[str, Any]) -> AgentCoreV2:
     Returns:
         Initialized AgentCoreV2 instance
     """
+    # Import tool registry here to avoid circular dependencies
+    from pocketportal.tools import registry as tool_registry
+
     # Initialize all dependencies
     model_registry = ModelRegistry()
 
@@ -575,5 +580,6 @@ def create_agent_core(config: Dict[str, Any]) -> AgentCoreV2:
         context_manager=context_manager,
         event_bus=event_bus,
         prompt_manager=prompt_manager,
+        tool_registry=tool_registry,
         config=config
     )
