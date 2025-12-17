@@ -1,12 +1,12 @@
-# 🚀 PocketPortal 4.0 - Truly Modular AI Agent Platform
+# 🚀 PocketPortal 4.1 - Truly Modular AI Agent Platform
 
 **Privacy-First, Interface-Agnostic AI Agent**
 
 ---
 
-## 🎉 PocketPortal 4.0 - Complete Modular Architecture
+## 🎉 PocketPortal 4.1 - Production-Ready Modular Architecture
 
-**PocketPortal 4.0** is a complete architectural refactor that makes the core **truly interface-agnostic** and production-ready.
+**PocketPortal 4.1** is a refined, production-ready architecture that makes the core **truly interface-agnostic** with a clean, consolidated package structure.
 
 ### What's Different in 4.0?
 
@@ -28,23 +28,27 @@ After (4.0):   Any Interface → Security → AgentCore → Router → LLM
 ### Quick Start
 
 ```bash
-# Install dependencies
-pip install -r requirements_core.txt
+# Install core dependencies
+pip install -e .
 
-# Run Telegram interface (new architecture)
-python pocketportal_unified/interfaces/telegram_interface.py
+# Or install with all features
+pip install -e ".[all]"
+
+# Run Telegram interface
+python -m pocketportal.interfaces.telegram_interface
 
 # Or create your own interface
-from pocketportal_unified.core import create_agent_core, SecurityMiddleware
+from pocketportal.core import create_agent_core, SecurityMiddleware
 agent_core = create_agent_core(config)
 secure_core = SecurityMiddleware(agent_core)
 ```
 
 ### Documentation
 
-📖 **Full 4.0 Documentation**: [`pocketportal_unified/README_4.0.md`](pocketportal_unified/README_4.0.md)
+📖 **Architecture Guide**: [`STRUCTURE.md`](STRUCTURE.md)
 🔄 **Migration from 3.x**: [`MIGRATION_TO_4.0.md`](MIGRATION_TO_4.0.md)
 🔧 **Installation Guide**: [`INSTALLATION.md`](INSTALLATION.md)
+🔒 **Security Enhancements**: [`SECURITY_FIXES.md`](SECURITY_FIXES.md)
 
 ---
 
@@ -52,25 +56,31 @@ secure_core = SecurityMiddleware(agent_core)
 
 ```
 pocketportal/
-├── pocketportal_unified/          # 4.0 Core Architecture
+├── pocketportal/                  # 4.1 Unified Package (14,795 lines)
 │   ├── core/                      # Agent engine, context, events
 │   ├── interfaces/                # Telegram, Web, API interfaces
 │   ├── routing/                   # Intelligent model routing
-│   ├── tools/                     # Tool framework & registry
-│   └── README_4.0.md             # Detailed 4.0 documentation
+│   ├── security/                  # Security middleware & rate limiting
+│   ├── tools/                     # Tool framework (16 categories)
+│   │   ├── mcp_tools/            # Model Context Protocol integration
+│   │   ├── knowledge/            # Semantic search & knowledge base
+│   │   ├── document_processing/  # Office docs, PDFs, Pandoc
+│   │   ├── audio_tools/          # Whisper transcription
+│   │   ├── automation_tools/     # Scheduling, shell execution
+│   │   ├── docker_tools/         # Container management
+│   │   └── ... (10 more)
+│   ├── config/                    # Configuration management
+│   ├── utils/                     # Shared utilities
+│   └── __init__.py               # Package exports & version
 │
-├── routing/                       # Shared routing system
-├── security/                      # Security & rate limiting
-├── telegram_agent_tools/          # Legacy tool collection (29 tools)
 ├── tests/                         # Test suite
 ├── scripts/                       # Setup & utility scripts
-├── docs/                          # Current documentation
-└── archive/                       # Legacy v3.x code & docs
-    ├── phase2/                    # Phase 2 iteration
-    ├── enhancements/              # Phase 2.5 enhancements
-    ├── v3_monolithic/            # Monolithic v3 agent
-    ├── v3_docs/                   # v3.x documentation
-    └── legacy_core/               # Old core files
+├── docs/                          # Documentation
+├── archive/                       # Legacy v3.x code & docs (reference only)
+├── pyproject.toml                 # Modern Python package config
+├── STRUCTURE.md                   # Architecture documentation
+├── MIGRATION_TO_4.0.md           # Migration guide
+└── README.md                      # This file
 ```
 
 ---
@@ -107,7 +117,7 @@ Previous versions of PocketPortal (v3.x) used a monolithic architecture. All v3.
 
 ---
 
-**Version:** 4.0.0
+**Version:** 4.1.0
 **Release Date:** December 2025
 **License:** MIT
 
