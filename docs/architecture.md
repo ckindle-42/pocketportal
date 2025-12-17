@@ -205,7 +205,7 @@ await web.start()
 If you have existing code:
 
 1. **Update imports**: Add `pocketportal.` prefix to all imports
-2. **Use `AgentCoreV2`**: Replace `AgentCore` with `AgentCoreV2`
+2. **Use `AgentCore`**: The unified core class is now simply called `AgentCore`
 3. **Update config**: Move to `pyproject.toml` format
 4. **Update model preferences**: Don't hardcode model names in code
 

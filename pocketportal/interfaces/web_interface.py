@@ -27,7 +27,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import the unified core
-from pocketportal.core import AgentCoreV2, ProcessingResult
+from pocketportal.core import AgentCore, ProcessingResult
 
 # Import existing config
 from pocketportal.config import load_config

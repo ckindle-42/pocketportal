@@ -34,12 +34,12 @@ Usage:
     web = WebInterface(secure_agent, config)
 """
 
-__version__ = '4.1.0'
+__version__ = '4.1.1'
 __author__ = 'PocketPortal Team'
 
 # Core components
 from .core import (
-    AgentCoreV2,
+    AgentCore,
     create_agent_core,
     ProcessingResult,
     ContextManager,
@@ -70,7 +70,7 @@ __all__ = [
     '__version__',
 
     # Core
-    'AgentCoreV2',
+    'AgentCore',
     'create_agent_core',
     'ProcessingResult',
     'ContextManager',

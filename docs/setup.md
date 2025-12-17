@@ -1,4 +1,4 @@
-# Quick Installation Guide - Telegram AI Agent v3.1
+# Quick Installation Guide - PocketPortal 4.1
 
 **Deploy in 30 minutes** - Complete privacy-first AI agent
 
@@ -247,7 +247,7 @@ sudo nano /etc/systemd/system/telegram-agent.service
 
 # Add:
 [Unit]
-Description=Telegram AI Agent
+Description=PocketPortal AI Agent
 After=network.target
 
 [Service]

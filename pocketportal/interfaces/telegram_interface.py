@@ -39,7 +39,7 @@ from pocketportal.middleware import ToolConfirmationMiddleware, ConfirmationRequ
 from pocketportal.security.security_module import RateLimiter
 
 if TYPE_CHECKING:
-    from pocketportal.core import AgentCoreV2
+    from pocketportal.core import AgentCore
     from pocketportal.config.settings import Settings
 
 logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ class TelegramInterface:
     - settings: Application settings (for telegram, security, tools config)
     """
 
-    def __init__(self, agent_core: 'AgentCoreV2', settings: 'Settings'):
+    def __init__(self, agent_core: 'AgentCore', settings: 'Settings'):
         """
         Initialize Telegram interface with injected dependencies
 
