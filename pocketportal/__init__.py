@@ -1,5 +1,5 @@
 """
-PocketPortal 4.0 - Unified AI Agent Platform
+PocketPortal 4.1 - Unified AI Agent Platform
 =============================================
 
 A modular, production-ready AI agent platform with multiple interface support.
@@ -34,7 +34,7 @@ Usage:
     web = WebInterface(secure_agent, config)
 """
 
-__version__ = '4.0.0'
+__version__ = '4.1.0'
 __author__ = 'PocketPortal Team'
 
 # Core components
