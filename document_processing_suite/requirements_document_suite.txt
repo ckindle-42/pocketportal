@@ -1,0 +1,137 @@
+# Document Processing Suite - Requirements
+# =========================================
+# Install: pip install -r requirements_document_suite.txt
+
+# ============================================================================
+# PANDOC CONVERTER (Most Important!)
+# ============================================================================
+# Note: Also requires Pandoc system package
+#   macOS: brew install pandoc
+#   Linux: sudo apt-get install pandoc
+
+# No Python dependencies for Pandoc (uses system command)
+
+# ============================================================================
+# EXCEL PROCESSOR
+# ============================================================================
+openpyxl==3.1.2          # Read/write XLSX files
+xlsxwriter==3.1.9        # Enhanced XLSX creation
+pandas==2.1.4            # Data analysis (optional but recommended)
+
+# ============================================================================
+# POWERPOINT PROCESSOR
+# ============================================================================
+python-pptx==0.6.23      # Create/edit PowerPoint files
+Pillow==10.1.0           # Image handling (also for Word)
+
+# ============================================================================
+# WORD PROCESSOR
+# ============================================================================
+python-docx==1.1.0       # Create/edit Word documents
+
+# ============================================================================
+# METADATA EXTRACTOR
+# ============================================================================
+PyPDF2==3.0.1            # PDF metadata
+mutagen==1.47.0          # Audio metadata (MP3, M4A, etc.)
+
+# ============================================================================
+# OPTIONAL ENHANCEMENTS
+# ============================================================================
+# For advanced PDF features:
+# pypdf==3.17.0          # Alternative PDF library
+
+# For video metadata:
+# hachoir==3.2.0         # Video file metadata
+
+# ============================================================================
+# SYSTEM DEPENDENCIES
+# ============================================================================
+# These must be installed separately:
+#
+# Pandoc (REQUIRED for Pandoc Converter):
+#   macOS: brew install pandoc
+#   Linux: sudo apt-get install pandoc
+#   Windows: choco install pandoc
+#
+# LaTeX (for PDF generation via Pandoc):
+#   macOS: brew install --cask mactex-no-gui
+#   Linux: sudo apt-get install texlive-xetex
+#   Windows: Install MiKTeX
+#
+# Tesseract (if using OCR - already in your project):
+#   macOS: brew install tesseract
+#   Linux: sudo apt-get install tesseract-ocr
+
+# ============================================================================
+# VERIFICATION
+# ============================================================================
+# After installation, verify with:
+#
+# python << 'EOF'
+# # Check Python packages
+# try:
+#     import docx, pptx, openpyxl, PyPDF2, mutagen
+#     print("✅ All Python packages installed")
+# except ImportError as e:
+#     print(f"❌ Missing package: {e}")
+#
+# # Check Pandoc
+# import subprocess
+# try:
+#     result = subprocess.run(['pandoc', '--version'], 
+#                            capture_output=True, timeout=2)
+#     if result.returncode == 0:
+#         print("✅ Pandoc installed")
+#     else:
+#         print("❌ Pandoc not working")
+# except FileNotFoundError:
+#     print("❌ Pandoc not installed")
+# EOF
+
+# ============================================================================
+# INSTALLATION COMMANDS
+# ============================================================================
+# Quick install (all at once):
+#   pip install openpyxl xlsxwriter pandas python-pptx python-docx PyPDF2 mutagen Pillow
+#
+# Individual installs:
+#   pip install openpyxl xlsxwriter      # Excel
+#   pip install python-pptx               # PowerPoint
+#   pip install python-docx               # Word
+#   pip install PyPDF2 mutagen            # Metadata
+#   pip install pandas                    # Data analysis
+#
+# System packages:
+#   brew install pandoc                   # macOS
+#   sudo apt-get install pandoc          # Linux
+
+# ============================================================================
+# COMPATIBILITY
+# ============================================================================
+# Python: 3.11+ (tested with 3.11, 3.12)
+# OS: macOS, Linux, Windows (WSL recommended)
+# Memory: 2GB+ RAM recommended
+# Disk: 500MB for all packages + templates
+
+# ============================================================================
+# TROUBLESHOOTING
+# ============================================================================
+# Issue: "No module named 'lxml'"
+#   Fix: pip install lxml
+#
+# Issue: "Pandoc not found"
+#   Fix: brew install pandoc (macOS) or sudo apt install pandoc (Linux)
+#
+# Issue: "PDF engine not found"
+#   Fix: brew install --cask mactex-no-gui (macOS)
+#
+# Issue: "Permission denied"
+#   Fix: chmod 755 /path/to/file
+
+# ============================================================================
+# OPTIONAL: Development & Testing
+# ============================================================================
+# pytest==7.4.3            # For running tests
+# black==23.12.1           # Code formatting
+# mypy==1.8.0              # Type checking
