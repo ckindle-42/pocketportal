@@ -1,6 +1,130 @@
 """
-Push to remote Tool
+Git Push Tool - Push to remote
 """
 
-# TODO: Implement git_push
-# Follow same pattern as git_clone.py
+import asyncio
+import logging
+from typing import Dict, Any
+from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from base_tool import BaseTool, ToolMetadata, ToolCategory
+
+logger = logging.getLogger(__name__)
+
+try:
+    from git import Repo, GitCommandError, InvalidGitRepositoryError
+    GIT_AVAILABLE = True
+except ImportError:
+    GIT_AVAILABLE = False
+
+
+class GitPushTool(BaseTool):
+    """Push commits to remote repository"""
+
+    def _get_metadata(self) -> ToolMetadata:
+        return ToolMetadata(
+            name="git_push",
+            description="Push commits to remote Git repository",
+            category=ToolCategory.DEVELOPMENT,
+            requires_confirmation=True,  # Pushes affect remote
+            parameters={
+                "repo_path": {
+                    "type": "string",
+                    "required": False,
+                    "description": "Path to repository (default: current directory)"
+                },
+                "remote": {
+                    "type": "string",
+                    "required": False,
+                    "description": "Remote name (default: origin)"
+                },
+                "branch": {
+                    "type": "string",
+                    "required": False,
+                    "description": "Branch to push (default: current branch)"
+                },
+                "force": {
+                    "type": "boolean",
+                    "required": False,
+                    "description": "Force push (DANGEROUS - use with caution)"
+                },
+                "set_upstream": {
+                    "type": "boolean",
+                    "required": False,
+                    "description": "Set upstream tracking (default: False)"
+                }
+            }
+        )
+
+    async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute git push"""
+
+        if not GIT_AVAILABLE:
+            return self._error_response("GitPython not installed. Run: pip install GitPython")
+
+        repo_path = parameters.get("repo_path", ".")
+        remote_name = parameters.get("remote", "origin")
+        branch = parameters.get("branch")
+        force = parameters.get("force", False)
+        set_upstream = parameters.get("set_upstream", False)
+
+        try:
+            # Open repository
+            repo = Repo(repo_path)
+
+            if repo.bare:
+                return self._error_response("Repository is bare")
+
+            # Get remote
+            if remote_name not in [r.name for r in repo.remotes]:
+                return self._error_response(f"Remote '{remote_name}' not found")
+
+            remote = repo.remote(remote_name)
+
+            # Use current branch if not specified
+            if not branch:
+                if repo.head.is_detached:
+                    return self._error_response("HEAD is detached, specify branch explicitly")
+                branch = repo.active_branch.name
+
+            # Build push arguments
+            push_kwargs = {}
+            if force:
+                push_kwargs["force"] = True
+            if set_upstream:
+                push_kwargs["set_upstream"] = True
+
+            # Execute push asynchronously
+            logger.info(f"Pushing {branch} to {remote_name}")
+
+            # Run in executor to avoid blocking
+            loop = asyncio.get_event_loop()
+            push_info = await loop.run_in_executor(
+                None,
+                lambda: remote.push(branch, **push_kwargs)
+            )
+
+            # Check results
+            if push_info:
+                info = push_info[0]
+                if info.flags & info.ERROR:
+                    return self._error_response(f"Push failed: {info.summary}")
+
+            return self._success_response(
+                result=f"Successfully pushed {branch} to {remote_name}",
+                metadata={
+                    "remote": remote_name,
+                    "branch": branch,
+                    "forced": force,
+                    "upstream_set": set_upstream
+                }
+            )
+
+        except InvalidGitRepositoryError:
+            return self._error_response(f"Not a git repository: {repo_path}")
+        except GitCommandError as e:
+            return self._error_response(f"Git command failed: {e}")
+        except Exception as e:
+            return self._error_response(f"Push failed: {str(e)}")

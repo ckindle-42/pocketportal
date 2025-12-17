@@ -67,25 +67,25 @@ telegram-agent/
 │   │
 │   ├── git_tools/                       # Git operations (9 tools)
 │   │   ├── git_clone.py                # ✅ COMPLETE
-│   │   ├── git_status.py               # ⚠️ STUB
-│   │   ├── git_commit.py               # ⚠️ STUB
-│   │   ├── git_push.py                 # ⚠️ STUB
-│   │   ├── git_pull.py                 # ⚠️ STUB
-│   │   ├── git_branch.py               # ⚠️ STUB
-│   │   ├── git_log.py                  # ⚠️ STUB
-│   │   ├── git_diff.py                 # ⚠️ STUB
-│   │   └── git_merge.py                # ⚠️ STUB
+│   │   ├── git_status.py               # ✅ COMPLETE
+│   │   ├── git_commit.py               # ✅ COMPLETE
+│   │   ├── git_push.py                 # ✅ COMPLETE
+│   │   ├── git_pull.py                 # ✅ COMPLETE
+│   │   ├── git_branch.py               # ✅ COMPLETE
+│   │   ├── git_log.py                  # ✅ COMPLETE
+│   │   ├── git_diff.py                 # ✅ COMPLETE
+│   │   └── git_merge.py                # ✅ COMPLETE
 │   │
 │   ├── docker_tools/                    # Docker management (5 tools)
 │   │   ├── docker_ps.py                # ✅ COMPLETE
-│   │   ├── docker_run.py               # ⚠️ STUB
-│   │   ├── docker_stop.py              # ⚠️ STUB
-│   │   ├── docker_logs.py              # ⚠️ STUB
-│   │   └── docker_compose.py           # ⚠️ STUB
+│   │   ├── docker_run.py               # ✅ COMPLETE
+│   │   ├── docker_stop.py              # ✅ COMPLETE
+│   │   ├── docker_logs.py              # ✅ COMPLETE
+│   │   └── docker_compose.py           # ✅ COMPLETE
 │   │
 │   ├── system_tools/                    # System monitoring (2 tools)
 │   │   ├── system_stats.py             # ✅ COMPLETE
-│   │   └── process_monitor.py          # ⚠️ STUB
+│   │   └── process_monitor.py          # ✅ COMPLETE
 │   │
 │   ├── document_tools/                  # Document processing
 │   │   └── pdf_ocr.py                  # ✅ COMPLETE
@@ -116,7 +116,7 @@ telegram-agent/
 │   ├── generate_addon_tools.py          # Tool generator
 │   └── com_telegram_agent.plist         # macOS auto-start
 │
-├── 📁 tests/                             # Test suite (empty - ready for you)
+├── 📁 tests/                             # Test suite with router, security, and tool tests
 └── 📁 credentials/                       # OAuth credentials (empty - you add)
 ```
 
@@ -137,27 +137,34 @@ telegram-agent/
 10. Shell Safety (command execution)
 11. Local Knowledge Search (RAG)
 
-### Addon Tools (18)
-#### Fully Implemented (7)
+### Addon Tools (18) - ALL COMPLETE
+#### Fully Implemented (18)
 - MCP Connector (400+ services)
 - MCP Registry
 - Git Clone
+- Git Status
+- Git Commit
+- Git Push
+- Git Pull
+- Git Branch
+- Git Log
+- Git Diff
+- Git Merge
 - Docker PS (list containers)
+- Docker Run
+- Docker Stop
+- Docker Logs
+- Docker Compose
 - System Stats (CPU/RAM/disk)
 - PDF OCR
 - Clipboard Manager
-
-#### Ready to Implement (13)
-- 8 Git operations (status, commit, push, pull, branch, log, diff, merge)
-- 4 Docker operations (run, stop, logs, compose)
-- 1 Process monitor
+- Process Monitor
 
 ### Total Capabilities
 - **11 core tools** (ready)
-- **7 addon tools** (ready)
+- **18 addon tools** (ready)
 - **400+ MCP services** (ready with auth)
-- **13 stub tools** (8-10 hours to complete)
-- **= 418+ capabilities** immediately available
+- **= 429+ capabilities** immediately available
 
 ---
 
