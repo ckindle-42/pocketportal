@@ -43,8 +43,8 @@ class ToolRegistry:
     def __init__(self):
         self.tools: Dict[str, Any] = {}
         self.tool_categories: Dict[str, List[str]] = {
-            'utility': [],
             'data': [],
+            'system': [],
             'web': [],
             'audio': [],
             'dev': [],
@@ -66,17 +66,24 @@ class ToolRegistry:
         
         # Tool module definitions (hardcoded for reliability)
         tool_modules = {
-            'utilities.qr_generator': 'QRGeneratorTool',
-            'utilities.text_transformer': 'TextTransformerTool',
-            'utilities.file_compressor': 'FileCompressorTool',
-            'utilities.clipboard_manager': 'ClipboardManagerTool',
+            # Data Tools (moved from utilities for better organization)
+            'data_tools.qr_generator': 'QRGeneratorTool',
+            'data_tools.text_transformer': 'TextTransformerTool',
+            'data_tools.file_compressor': 'FileCompressorTool',
             'data_tools.math_visualizer': 'MathVisualizerTool',
             'data_tools.csv_analyzer': 'CSVAnalyzerTool',
+            # System Tools (moved from utilities - OS interaction)
+            'system_tools.clipboard_manager': 'ClipboardManagerTool',
+            # Web Tools
             'web_tools.http_fetcher': 'HTTPFetcherTool',
+            # Audio Tools
             'audio_tools.audio_batch_transcriber': 'AudioBatchTranscriberTool',
+            # Dev Tools
             'dev_tools.python_env_manager': 'PythonEnvManagerTool',
+            # Automation Tools
             'automation_tools.job_scheduler': 'JobSchedulerTool',
             'automation_tools.shell_safety': 'ShellSafetyTool',
+            # Knowledge Tools
             'knowledge.local_knowledge': 'LocalKnowledgeTool',
         }
         

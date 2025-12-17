@@ -44,6 +44,31 @@ class SecurityConfig(BaseModel):
             raise ValueError("Rate limit must be at least 1")
         return v
 
+    @field_validator('sandbox_enabled')
+    @classmethod
+    def validate_docker_socket(cls, v: bool) -> bool:
+        """Validate Docker socket accessibility when sandbox is enabled"""
+        if v:  # If sandbox is enabled, check Docker socket
+            docker_socket = Path("/var/run/docker.sock")
+
+            # Check if socket exists
+            if not docker_socket.exists():
+                raise ValueError(
+                    "Docker sandbox is enabled but Docker socket not found at /var/run/docker.sock. "
+                    "Is Docker installed and running? "
+                    "To disable sandbox, set security.sandbox_enabled=false in config."
+                )
+
+            # Check if socket is accessible
+            if not os.access(docker_socket, os.R_OK):
+                raise ValueError(
+                    "Docker socket exists but is not accessible. "
+                    "Check permissions or add your user to the docker group: "
+                    "sudo usermod -aG docker $USER"
+                )
+
+        return v
+
     model_config = ConfigDict(extra='allow')
 
 
