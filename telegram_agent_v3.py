@@ -169,7 +169,7 @@ class TelegramAgent:
         """Handle /start command"""
         
         if not self._is_authorized(update):
-            await update.message.reply_text("â›” Unauthorized user")
+            await update.message.reply_text("⛔ Unauthorized user")
             return
         
         welcome_message = """ðŸ¤– **Telegram AI Agent v3.0**
@@ -365,7 +365,7 @@ Everything runs locally - no data leaves your machine!"""
         """Handle text messages"""
 
         if not self._is_authorized(update):
-            await update.message.reply_text("â›" Unauthorized")
+            await update.message.reply_text("⛔ Unauthorized")
             return
 
         # Check rate limiting
@@ -375,7 +375,12 @@ Everything runs locally - no data leaves your machine!"""
             return
 
         user_message = update.message.text
-        logger.info(f"Processing text message: {user_message[:50]}...")
+        logger.info("processing_message", extra={
+            "user_id": update.effective_user.id,
+            "message_length": len(user_message),
+            "message_snippet": user_message[:50],
+            "routing_strategy": self.routing_strategy.name
+        })
 
         # Send "typing" indicator
         await update.message.chat.send_action("typing")
@@ -385,7 +390,11 @@ Everything runs locally - no data leaves your machine!"""
             sanitized_query, warnings = self.input_sanitizer.sanitize_command(user_message)
 
             if warnings:
-                logger.warning(f"Security warnings for user {update.effective_user.id}: {warnings}")
+                logger.warning("security_warning", extra={
+                    "user_id": update.effective_user.id,
+                    "warnings": warnings,
+                    "warning_count": len(warnings)
+                })
                 # Notify user if dangerous patterns detected
                 warning_msg = "⚠️ Security notice: " + "; ".join(warnings)
                 await update.message.reply_text(warning_msg)
@@ -408,9 +417,13 @@ Everything runs locally - no data leaves your machine!"""
             else:
                 error_msg = f"âŒ Error: {result.error}"
                 await update.message.reply_text(error_msg)
-        
+
         except Exception as e:
-            logger.error(f"Error processing message: {e}")
+            logger.error("message_processing_error", extra={
+                "user_id": update.effective_user.id,
+                "error_type": type(e).__name__,
+                "error_message": str(e)
+            }, exc_info=True)
             await update.message.reply_text(
                 "âŒ An error occurred processing your message. Please try again."
             )
@@ -451,7 +464,7 @@ Everything runs locally - no data leaves your machine!"""
                         if first_result.get('success'):
                             text = first_result.get('text', '')
                             await update.message.reply_text(
-                                f"ðŸ" **Transcription:**\n\n{text}",
+                                f"📝 **Transcription:**\n\n{text}",
                                 parse_mode='Markdown'
                             )
                         else:
@@ -466,7 +479,12 @@ Everything runs locally - no data leaves your machine!"""
             
 
         except Exception as e:
-            logger.error(f"Error processing voice: {e}")
+            logger.error("voice_processing_error", extra={
+                "user_id": update.effective_user.id,
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "voice_file_id": update.message.voice.file_id if update.message.voice else None
+            }, exc_info=True)
             await update.message.reply_text("❌ Error processing voice message")
 
         finally:
@@ -511,7 +529,12 @@ Everything runs locally - no data leaves your machine!"""
             
 
         except Exception as e:
-            logger.error(f"Error processing photo: {e}")
+            logger.error("photo_processing_error", extra={
+                "user_id": update.effective_user.id,
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "photo_file_id": update.message.photo[-1].file_id if update.message.photo else None
+            }, exc_info=True)
             await update.message.reply_text("❌ Error processing image")
 
         finally:
@@ -577,9 +600,38 @@ Everything runs locally - no data leaves your machine!"""
                     f"Size: {document.file_size / 1024:.1f} KB"
                 )
         
+        except PermissionError:
+            logger.error("document_permission_error", extra={
+                "user_id": update.effective_user.id,
+                "file_name": document.file_name,
+                "file_size": document.file_size,
+                "error_type": "PermissionError"
+            })
+            await update.message.reply_text("❌ Permission denied reading this file.")
+        except UnicodeDecodeError:
+            logger.error("document_encoding_error", extra={
+                "user_id": update.effective_user.id,
+                "file_name": document.file_name,
+                "file_size": document.file_size,
+                "error_type": "UnicodeDecodeError"
+            })
+            await update.message.reply_text("❌ File is not valid text (binary file?).")
+        except FileNotFoundError:
+            logger.error("document_not_found_error", extra={
+                "user_id": update.effective_user.id,
+                "file_name": document.file_name,
+                "error_type": "FileNotFoundError"
+            })
+            await update.message.reply_text("❌ File not found during processing.")
         except Exception as e:
-            logger.error(f"Error processing document: {e}")
-            await update.message.reply_text("❌ Error processing file")
+            logger.exception("document_processing_error", extra={
+                "user_id": update.effective_user.id,
+                "file_name": document.file_name,
+                "file_size": document.file_size,
+                "error_type": type(e).__name__,
+                "error_message": str(e)
+            })
+            await update.message.reply_text("❌ System error. Admin has been notified.")
 
         finally:
             # Cleanup - always runs whether success or error
