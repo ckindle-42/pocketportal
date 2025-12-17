@@ -57,3 +57,6 @@ screenshots/
 data/
 knowledge_base.json
 *.backup
+
+# Generated reports (should not be committed)
+docs/reports/
