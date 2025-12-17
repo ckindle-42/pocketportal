@@ -5,15 +5,31 @@ import json
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
+try:
+    import aiofiles
+    HAS_AIOFILES = True
+except ImportError:
+    HAS_AIOFILES = False
+
 from ..base_tool import BaseTool, ToolMetadata, ToolParameter, ToolCategory
 
 
 class LocalKnowledgeTool(BaseTool):
     """Search and retrieve from local knowledge base"""
-    
+
     _index: Optional[Any] = None
     _documents: List[Dict[str, Any]] = []
     _embeddings_model: Optional[Any] = None
+    _db_loaded: bool = False
+
+    DB_PATH = Path("data/knowledge_base.json")
+
+    def __init__(self):
+        super().__init__()
+        # Load database only once
+        if not LocalKnowledgeTool._db_loaded:
+            self._load_db()
+            LocalKnowledgeTool._db_loaded = True
     
     def _get_metadata(self) -> ToolMetadata:
         return ToolMetadata(
@@ -165,11 +181,16 @@ class LocalKnowledgeTool(BaseTool):
         """Add document from file"""
         if not os.path.exists(doc_path):
             return self._error_response(f"File not found: {doc_path}")
-        
-        # Read file content
+
+        # Read file content asynchronously if aiofiles is available
         try:
-            with open(doc_path, 'r', encoding='utf-8') as f:
-                content = f.read()
+            if HAS_AIOFILES:
+                async with aiofiles.open(doc_path, 'r', encoding='utf-8') as f:
+                    content = await f.read()
+            else:
+                # Fallback to synchronous reading
+                with open(doc_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
         except Exception as e:
             return self._error_response(f"Failed to read file: {e}")
         
@@ -179,7 +200,10 @@ class LocalKnowledgeTool(BaseTool):
             "content": content,
             "added_at": Path(doc_path).stat().st_mtime
         })
-        
+
+        # Save to disk
+        self._save_db()
+
         return self._success_response({
             "message": f"Added document: {doc_path}",
             "total_documents": len(LocalKnowledgeTool._documents)
@@ -192,7 +216,10 @@ class LocalKnowledgeTool(BaseTool):
             "content": content,
             "added_at": None
         })
-        
+
+        # Save to disk
+        self._save_db()
+
         return self._success_response({
             "message": "Content added",
             "total_documents": len(LocalKnowledgeTool._documents)
@@ -215,7 +242,29 @@ class LocalKnowledgeTool(BaseTool):
         count = len(LocalKnowledgeTool._documents)
         LocalKnowledgeTool._documents = []
         LocalKnowledgeTool._index = None
-        
+
+        # Save the cleared state
+        self._save_db()
+
         return self._success_response({
             "message": f"Cleared {count} documents"
         })
+
+    def _load_db(self):
+        """Load knowledge base from disk"""
+        if self.DB_PATH.exists():
+            try:
+                with open(self.DB_PATH, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    LocalKnowledgeTool._documents = data.get('documents', [])
+            except Exception as e:
+                print(f"Error loading knowledge base: {e}")
+
+    def _save_db(self):
+        """Save knowledge base to disk"""
+        try:
+            self.DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.DB_PATH, 'w', encoding='utf-8') as f:
+                json.dump({'documents': LocalKnowledgeTool._documents}, f, indent=2)
+        except Exception as e:
+            print(f"Error saving knowledge base: {e}")

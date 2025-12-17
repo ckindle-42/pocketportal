@@ -16,6 +16,7 @@ import asyncio
 import logging
 import os
 import sys
+import tempfile
 from pathlib import Path
 from typing import Optional, Dict, Any
 from datetime import datetime
@@ -355,11 +356,13 @@ Everything runs locally - no data leaves your machine!"""
     
     async def handle_voice_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle voice messages"""
-        
+
         if not self._is_authorized(update):
             return
-        
+
         await update.message.reply_text("ðŸŽ¤ Transcribing voice message...")
+
+        voice_path = None
         
         try:
             # Get voice file
@@ -367,40 +370,44 @@ Everything runs locally - no data leaves your machine!"""
             file = await context.bot.get_file(voice.file_id)
             
             # Download to temp location
-            voice_path = Path("/tmp") / f"voice_{voice.file_id}.ogg"
+            voice_path = Path(tempfile.gettempdir()) / f"voice_{voice.file_id}.ogg"
             await file.download_to_drive(voice_path)
             
             # Get audio transcriber tool
-            transcriber = tool_registry.get_tool('audio_batch_transcribe')
+            transcriber = tool_registry.get_tool('audio_transcribe')
             
             if transcriber:
                 result = await transcriber.execute({
-                    'files': [str(voice_path)],
+                    'audio_files': [str(voice_path)],
                     'model_size': 'base'
                 })
                 
                 if result['success']:
-                    transcriptions = result['result']['transcriptions']
-                    if transcriptions and transcriptions[0]['success']:
+                    # Result is a list of transcription results
+                    transcriptions = result['result']
+                    if transcriptions and len(transcriptions) > 0 and transcriptions[0].get('success'):
                         text = transcriptions[0]['text']
                         await update.message.reply_text(
                             f"ðŸ“ **Transcription:**\n\n{text}",
                             parse_mode='Markdown'
                         )
                     else:
-                        await update.message.reply_text("âŒ Transcription failed")
+                        error_msg = transcriptions[0].get('error', 'Unknown error') if transcriptions else 'No results'
+                        await update.message.reply_text(f"❌ Transcription failed: {error_msg}")
                 else:
                     await update.message.reply_text(f"âŒ Error: {result.get('error')}")
             else:
                 await update.message.reply_text("âŒ Audio transcriber not available")
             
-            # Cleanup
-            if voice_path.exists():
-                voice_path.unlink()
-        
+
         except Exception as e:
             logger.error(f"Error processing voice: {e}")
-            await update.message.reply_text("âŒ Error processing voice message")
+            await update.message.reply_text("❌ Error processing voice message")
+
+        finally:
+            # Cleanup - always runs whether success or error
+            if voice_path and voice_path.exists():
+                voice_path.unlink()
     
     async def handle_photo_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle photo messages"""
@@ -416,7 +423,7 @@ Everything runs locally - no data leaves your machine!"""
             file = await context.bot.get_file(photo.file_id)
             
             # Download to temp location
-            photo_path = Path("/tmp") / f"photo_{photo.file_id}.jpg"
+            photo_path = Path(tempfile.gettempdir()) / f"photo_{photo.file_id}.jpg"
             await file.download_to_drive(photo_path)
             
             # Get caption if provided
@@ -437,13 +444,15 @@ Everything runs locally - no data leaves your machine!"""
             else:
                 await update.message.reply_text(f"âŒ Error: {result.error}")
             
-            # Cleanup
-            if photo_path.exists():
-                photo_path.unlink()
-        
+
         except Exception as e:
             logger.error(f"Error processing photo: {e}")
-            await update.message.reply_text("âŒ Error processing image")
+            await update.message.reply_text("❌ Error processing image")
+
+        finally:
+            # Cleanup - always runs whether success or error
+            if photo_path and photo_path.exists():
+                photo_path.unlink()
     
     async def handle_document(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle document uploads"""
@@ -458,7 +467,7 @@ Everything runs locally - no data leaves your machine!"""
             file = await context.bot.get_file(document.file_id)
             
             # Download to temp location
-            doc_path = Path("/tmp") / document.file_name
+            doc_path = Path(tempfile.gettempdir()) / document.file_name
             await file.download_to_drive(doc_path)
             
             # Determine file type and process accordingly
@@ -484,8 +493,13 @@ Everything runs locally - no data leaves your machine!"""
         
         except Exception as e:
             logger.error(f"Error processing document: {e}")
-            await update.message.reply_text("âŒ Error processing file")
-    
+            await update.message.reply_text("❌ Error processing file")
+
+        finally:
+            # Cleanup - always runs whether success or error
+            if doc_path and doc_path.exists():
+                doc_path.unlink()
+
     # ========================================================================
     # HELPER METHODS
     # ========================================================================
