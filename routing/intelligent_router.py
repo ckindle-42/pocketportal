@@ -36,14 +36,18 @@ class RoutingDecision:
 class IntelligentRouter:
     """
     Routes queries to optimal models based on task classification
-    
+
     Supports multiple strategies and automatic fallback selection
     """
-    
-    def __init__(self, registry: ModelRegistry, strategy: RoutingStrategy = RoutingStrategy.AUTO):
+
+    def __init__(self, registry: ModelRegistry, strategy: RoutingStrategy = RoutingStrategy.AUTO,
+                 model_preferences: Optional[Dict[str, List[str]]] = None):
         self.registry = registry
         self.strategy = strategy
         self.classifier = TaskClassifier()
+
+        # Model preferences from config (or use defaults)
+        self.model_preferences = model_preferences or self._get_default_preferences()
 
         # Verify model availability on initialization
         self._verify_model_preferences()
@@ -92,31 +96,31 @@ class IntelligentRouter:
             reasoning=reasoning
         )
     
-    def _route_auto(self, classification: TaskClassification,
-                   max_cost: float) -> ModelMetadata:
-        """Automatic balanced routing"""
-
-        # NOTE: These model IDs should match your actual model registry.
-        # The routing system will fall back gracefully if specific models are unavailable.
-        # To customize: Update these preferences based on your available models.
-
-        # Map complexity to model tiers (prefer size-based selection)
-        complexity_model_map = {
-            TaskComplexity.TRIVIAL: ["ollama_qwen25_05b", "ollama_qwen25_1.5b"],
-            TaskComplexity.SIMPLE: ["ollama_qwen25_1.5b", "ollama_llama32_3b", "ollama_qwen25_7b"],
-            TaskComplexity.MODERATE: ["ollama_qwen25_7b", "ollama_qwen25_14b"],
-            TaskComplexity.COMPLEX: ["ollama_qwen25_14b", "ollama_qwen25_32b"],
-            TaskComplexity.EXPERT: ["ollama_qwen25_32b", "ollama_qwen25_14b"]
+    def _get_default_preferences(self) -> Dict[str, List[str]]:
+        """
+        Get default model preferences.
+        These can be overridden via config.
+        """
+        return {
+            'trivial': ["ollama_qwen25_05b", "ollama_qwen25_1.5b"],
+            'simple': ["ollama_qwen25_1.5b", "ollama_llama32_3b", "ollama_qwen25_7b"],
+            'moderate': ["ollama_qwen25_7b", "ollama_qwen25_14b"],
+            'complex': ["ollama_qwen25_14b", "ollama_qwen25_32b"],
+            'expert': ["ollama_qwen25_32b", "ollama_qwen25_14b"],
+            'code': ["ollama_qwen25_coder", "ollama_deepseek_coder", "ollama_qwen25_14b"]
         }
 
-        # Get category-specific preferences
+    def _route_auto(self, classification: TaskClassification,
+                   max_cost: float) -> ModelMetadata:
+        """Automatic balanced routing using configurable model preferences"""
+
+        # Get category-specific preferences (configurable via constructor)
         if classification.category == TaskCategory.CODE and classification.requires_code:
-            preferred = ["ollama_qwen25_coder", "ollama_deepseek_coder", "ollama_qwen25_14b"]
+            preferred = self.model_preferences.get('code', [])
         else:
-            preferred = complexity_model_map.get(
-                classification.complexity,
-                ["ollama_qwen25_7b"]
-            )
+            # Map complexity to preference key
+            complexity_key = classification.complexity.value.lower()  # 'trivial', 'simple', etc.
+            preferred = self.model_preferences.get(complexity_key, self.model_preferences.get('simple', []))
 
         # Find first available model from preferences
         for model_id in preferred:
@@ -242,14 +246,10 @@ class IntelligentRouter:
     def _verify_model_preferences(self):
         """Verify that preferred models exist in registry and log warnings if not"""
 
-        # All hardcoded model IDs used in routing
-        preferred_model_ids = {
-            # Complexity-based
-            "ollama_qwen25_05b", "ollama_qwen25_1.5b", "ollama_llama32_3b",
-            "ollama_qwen25_7b", "ollama_qwen25_14b", "ollama_qwen25_32b",
-            # Code-specific
-            "ollama_qwen25_coder", "ollama_deepseek_coder"
-        }
+        # Collect all model IDs from preferences
+        preferred_model_ids = set()
+        for models_list in self.model_preferences.values():
+            preferred_model_ids.update(models_list)
 
         missing_models = []
         for model_id in preferred_model_ids:
@@ -261,7 +261,8 @@ class IntelligentRouter:
             logger.warning(
                 f"Routing preferences reference {len(missing_models)} unavailable models: "
                 f"{', '.join(missing_models[:3])}{'...' if len(missing_models) > 3 else ''}. "
-                f"Routing will fall back to available models."
+                f"Routing will fall back to available models. "
+                f"To customize preferences, edit MODEL_PREF_* in .env"
             )
         else:
             logger.info("All preferred models found in registry")
