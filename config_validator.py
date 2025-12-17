@@ -116,6 +116,10 @@ class AgentConfig(BaseModel):
         default=Path.home() / "telegram-agent" / "logs" / "agent.log",
         description="Log file path"
     )
+    log_format_json: bool = Field(
+        default=False,
+        description="Use JSON format for logs (better for programmatic parsing)"
+    )
     
     # Paths
     screenshots_dir: Path = Field(
@@ -139,6 +143,18 @@ class AgentConfig(BaseModel):
     verbose_routing: bool = Field(
         default=False,
         description="Show routing decisions in responses"
+    )
+
+    # Health Check HTTP Server
+    health_check_enabled: bool = Field(
+        default=True,
+        description="Enable HTTP health check endpoint for monitoring"
+    )
+    health_check_port: int = Field(
+        default=8765,
+        ge=1024,
+        le=65535,
+        description="Port for health check HTTP server (localhost only)"
     )
 
     # Model Preferences (configurable model routing)
@@ -236,11 +252,14 @@ def load_and_validate_config() -> Optional[AgentConfig]:
         'rate_limit_window': int(os.getenv('RATE_LIMIT_WINDOW', '60')),
         'log_level': os.getenv('LOG_LEVEL', 'INFO'),
         'log_file': os.getenv('LOG_FILE', '~/telegram-agent/logs/agent.log'),
+        'log_format_json': os.getenv('LOG_FORMAT_JSON', 'false').lower() == 'true',
         'screenshots_dir': os.getenv('SCREENSHOTS_DIR', '~/telegram-agent/screenshots'),
         'temp_dir': os.getenv('TEMP_DIR', '/tmp/telegram_agent'),
         'venvs_dir': os.getenv('VENVS_DIR', '~/.telegram_agent/venvs'),
         'knowledge_base_dir': os.getenv('KNOWLEDGE_BASE_DIR', '~/.telegram_agent/knowledge_base'),
         'verbose_routing': os.getenv('VERBOSE_ROUTING', 'false').lower() == 'true',
+        'health_check_enabled': os.getenv('HEALTH_CHECK_ENABLED', 'true').lower() == 'true',
+        'health_check_port': int(os.getenv('HEALTH_CHECK_PORT', '8765')),
         'model_pref_trivial': os.getenv('MODEL_PREF_TRIVIAL', 'ollama_qwen25_05b,ollama_qwen25_1.5b'),
         'model_pref_simple': os.getenv('MODEL_PREF_SIMPLE', 'ollama_qwen25_1.5b,ollama_llama32_3b,ollama_qwen25_7b'),
         'model_pref_moderate': os.getenv('MODEL_PREF_MODERATE', 'ollama_qwen25_7b,ollama_qwen25_14b'),
