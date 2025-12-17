@@ -66,9 +66,10 @@ class ToolRegistry:
         
         # Tool module definitions (hardcoded for reliability)
         tool_modules = {
-            'utility_tools.qr_generator': 'QRGeneratorTool',
-            'utility_tools.text_transformer': 'TextTransformerTool',
-            'utility_tools.file_compressor': 'FileCompressorTool',
+            'utilities.qr_generator': 'QRGeneratorTool',
+            'utilities.text_transformer': 'TextTransformerTool',
+            'utilities.file_compressor': 'FileCompressorTool',
+            'utilities.clipboard_manager': 'ClipboardManagerTool',
             'data_tools.math_visualizer': 'MathVisualizerTool',
             'data_tools.csv_analyzer': 'CSVAnalyzerTool',
             'web_tools.http_fetcher': 'HTTPFetcherTool',
@@ -76,7 +77,7 @@ class ToolRegistry:
             'dev_tools.python_env_manager': 'PythonEnvManagerTool',
             'automation_tools.job_scheduler': 'JobSchedulerTool',
             'automation_tools.shell_safety': 'ShellSafetyTool',
-            'knowledge_tools.local_knowledge': 'LocalKnowledgeTool',
+            'knowledge.local_knowledge': 'LocalKnowledgeTool',
         }
         
         for module_path, class_name in tool_modules.items():

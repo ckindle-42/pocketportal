@@ -40,8 +40,7 @@ telegram-agent/
 ├── 📄 .gitignore                         # Git ignore rules
 ├── 📄 .env.example                       # Configuration template
 │
-├── 📄 requirements_with_addons.txt       # All dependencies
-├── 📄 requirements_core.txt              # Core-only dependencies
+├── 📄 pyproject.toml                     # Modern Python packaging (replaces requirements*.txt)
 │
 ├── 🐍 telegram_agent_v3.py               # Main agent (~800 lines)
 ├── 🐍 config_validator.py                # Config validation
@@ -65,11 +64,12 @@ telegram-agent/
 │   ├── __init__.py                      # Auto-discovery registry
 │   ├── base_tool.py                     # Base framework
 │   │
-│   ├── 📁 utility_tools/                # 3 tools
+│   ├── 📁 utilities/                    # 4 tools (consolidated)
 │   │   ├── __init__.py
 │   │   ├── qr_generator.py
 │   │   ├── text_transformer.py
-│   │   └── file_compressor.py
+│   │   ├── file_compressor.py
+│   │   └── clipboard_manager.py
 │   │
 │   ├── 📁 data_tools/                   # 2 tools
 │   │   ├── __init__.py
@@ -93,8 +93,9 @@ telegram-agent/
 │   │   ├── scheduler.py
 │   │   └── shell_safety.py
 │   │
-│   ├── 📁 knowledge_tools/              # 1 tool
+│   ├── 📁 knowledge/                    # 2 tools (consolidated)
 │   │   ├── __init__.py
+│   │   ├── knowledge_base_sqlite.py
 │   │   └── local_knowledge.py
 │   │
 │   ├── 📁 mcp_tools/                    # 2 tools (MCP)
@@ -131,9 +132,7 @@ telegram-agent/
 │   │   ├── __init__.py
 │   │   └── pdf_ocr.py                  # ✅ COMPLETE
 │   │
-│   └── 📁 utility_addons/               # 1 tool
-│       ├── __init__.py
-│       └── clipboard_manager.py        # ✅ COMPLETE
+# Note: utility_addons/ merged into utilities/
 │
 ├── 📁 docs/                              # Documentation (20+ files)
 │   ├── README.md
