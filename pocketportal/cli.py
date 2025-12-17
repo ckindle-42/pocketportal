@@ -84,13 +84,13 @@ async def start_interface(
             # Start all configured interfaces
             if settings.interfaces.telegram:
                 from pocketportal.interfaces.telegram_interface import TelegramInterface
-                telegram = TelegramInterface(secure_agent, settings.interfaces.telegram)
+                telegram = TelegramInterface(secure_agent, settings)
                 manager.register("telegram", telegram)
                 logger.info("Registered Telegram interface")
 
             if settings.interfaces.web:
                 from pocketportal.interfaces.web_interface import WebInterface
-                web = WebInterface(secure_agent, settings.interfaces.web)
+                web = WebInterface(secure_agent, settings)
                 manager.register("web", web)
                 logger.info("Registered Web interface")
 
@@ -100,7 +100,7 @@ async def start_interface(
                 sys.exit(1)
 
             from pocketportal.interfaces.telegram_interface import TelegramInterface
-            telegram = TelegramInterface(secure_agent, settings.interfaces.telegram)
+            telegram = TelegramInterface(secure_agent, settings)
             manager.register("telegram", telegram)
             logger.info("Registered Telegram interface")
 
@@ -110,7 +110,7 @@ async def start_interface(
                 sys.exit(1)
 
             from pocketportal.interfaces.web_interface import WebInterface
-            web = WebInterface(secure_agent, settings.interfaces.web)
+            web = WebInterface(secure_agent, settings)
             manager.register("web", web)
             logger.info("Registered Web interface")
 

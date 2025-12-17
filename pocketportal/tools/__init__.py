@@ -59,11 +59,21 @@ class ToolRegistry:
         Auto-discover and load all tools from tool directories.
         Returns (loaded_count, failed_count)
         """
-        
+
         tools_dir = Path(__file__).parent
         loaded = 0
         failed = 0
-        
+
+        # TODO: Refactor to dynamic `pkgutil` discovery
+        # Current implementation uses hardcoded dictionary for reliability,
+        # but this requires manual updates when adding new tools.
+        # Future enhancement: Use pkgutil.walk_packages to automatically
+        # discover all tool modules in subdirectories.
+        # Example:
+        #   import pkgutil
+        #   for importer, modname, ispkg in pkgutil.walk_packages([str(tools_dir)]):
+        #       # Auto-discover and load tools
+        #
         # Tool module definitions (hardcoded for reliability)
         tool_modules = {
             # Data Tools (moved from utilities for better organization)

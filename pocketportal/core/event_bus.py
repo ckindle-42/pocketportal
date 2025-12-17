@@ -154,9 +154,18 @@ class EventBus:
             task = self._notify_subscriber(callback, event)
             tasks.append(task)
 
-        # Wait for all notifications to complete
+        # Wait for all notifications to complete (SafeTaskFactory pattern)
+        # return_exceptions=True ensures one subscriber failure doesn't crash others
         if tasks:
-            await asyncio.gather(*tasks, return_exceptions=True)
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+            # Log any exceptions that escaped _notify_subscriber (defense in depth)
+            for i, result in enumerate(results):
+                if isinstance(result, Exception):
+                    logger.error(
+                        f"Uncaught exception in event subscriber {i} for {event_type.value}: {result}",
+                        exc_info=result
+                    )
 
     async def _notify_subscriber(self, callback: Callable, event: Event):
         """
