@@ -34,7 +34,7 @@ Usage:
     web = WebInterface(secure_agent, config)
 """
 
-__version__ = '4.1.1'
+__version__ = '4.1.2'
 __author__ = 'PocketPortal Team'
 
 # Core components

@@ -40,31 +40,26 @@ pocketportal/                       # Repository root
 │   ├── tools/                     # Extensible Tool System
 │   │   ├── __init__.py           # Tool registry
 │   │   ├── base_tool.py          # Base tool interface
-│   │   ├── system_tools/         # System operations
+│   │   ├── system_tools/         # System operations (clipboard, process monitor, stats)
 │   │   ├── git_tools/            # Git integration
 │   │   ├── docker_tools/         # Docker management
 │   │   ├── web_tools/            # HTTP/web scraping
-│   │   ├── data_tools/           # CSV, JSON processing
+│   │   ├── data_tools/           # CSV, JSON, compression, QR codes, text tools
 │   │   ├── audio_tools/          # Whisper transcription
 │   │   ├── automation_tools/     # Scheduling, cron
 │   │   ├── dev_tools/            # Python environment mgmt
-│   │   ├── utilities/            # QR codes, compression, text tools
 │   │   ├── mcp_tools/            # Model Context Protocol
-│   │   ├── knowledge/            # NEW: Knowledge base
+│   │   ├── knowledge/            # Knowledge base (semantic search, SQLite)
 │   │   │   ├── __init__.py
 │   │   │   └── knowledge_base_sqlite.py
-│   │   └── document_processing/  # NEW: Document suite
+│   │   └── document_tools/       # Document suite (PDF OCR, Office docs)
 │   │       ├── __init__.py
-│   │       ├── word_processor.py
-│   │       ├── excel_processor.py
-│   │       ├── powerpoint_processor.py
-│   │       ├── pandoc_converter.py
-│   │       └── document_metadata_extractor.py
+│   │       └── pdf_ocr.py
 │   │
 │   ├── interfaces/               # User-Facing Adapters
 │   │   ├── __init__.py
 │   │   ├── telegram_interface.py # Telegram bot
-│   │   ├── telegram_ui.py        # Advanced Telegram UI features
+│   │   ├── telegram_renderers.py # Advanced Telegram UI rendering (buttons, menus)
 │   │   └── web_interface.py      # FastAPI + WebSocket
 │   │
 │   ├── config/                   # Configuration Management

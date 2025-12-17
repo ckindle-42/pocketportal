@@ -60,36 +60,37 @@ pocketportal list-tools
 
 ```
 pocketportal/
-├── pocketportal/                  # 4.1 Unified Package (14,795 lines)
+├── pocketportal/                  # 4.1 Unified Package
 │   ├── core/                      # Agent engine, context, events
 │   ├── interfaces/                # Telegram, Web, API interfaces
+│   │   ├── telegram_interface.py # Telegram bot
+│   │   ├── telegram_renderers.py # Telegram UI rendering
+│   │   └── web_interface.py      # FastAPI + WebSocket
 │   ├── routing/                   # Intelligent model routing
 │   ├── security/                  # Security middleware & rate limiting
-│   ├── tools/                     # Tool framework (16 categories)
-│   │   ├── mcp_tools/            # Model Context Protocol integration
-│   │   ├── knowledge/            # Semantic search & knowledge base
-│   │   ├── document_processing/  # Office docs, PDFs, Pandoc
+│   ├── tools/                     # Tool framework
+│   │   ├── system_tools/         # System operations
+│   │   ├── data_tools/           # CSV, JSON, compression, QR, text
+│   │   ├── git_tools/            # Git integration
+│   │   ├── docker_tools/         # Container management
+│   │   ├── web_tools/            # HTTP/web scraping
 │   │   ├── audio_tools/          # Whisper transcription
 │   │   ├── automation_tools/     # Scheduling, shell execution
-│   │   ├── docker_tools/         # Container management
-│   │   └── ... (10 more)
+│   │   ├── dev_tools/            # Python environment mgmt
+│   │   ├── mcp_tools/            # Model Context Protocol
+│   │   ├── knowledge/            # Semantic search & knowledge base
+│   │   └── document_tools/       # PDF OCR, Office docs
 │   ├── config/                    # Configuration management
 │   ├── utils/                     # Shared utilities
 │   └── __init__.py               # Package exports & version
 │
 ├── tests/                         # Test suite
-├── scripts/                       # Setup & utility scripts
-│   ├── install.sh                # Complete installation script
-│   ├── setup.sh                  # Quick setup script
-│   └── deployment/               # Platform-specific deployment configs
-│       ├── macos/                # macOS LaunchAgent
-│       └── linux/                # Linux systemd service
 ├── docs/                          # Documentation
 │   ├── architecture.md           # Architecture documentation
 │   ├── setup.md                  # Installation guide
 │   ├── security/                 # Security documentation
-│   ├── reports/                  # Verification reports
-│   └── archive/                  # Legacy migration guides
+│   ├── reports/                  # Verification reports (gitignored)
+│   └── archive/                  # Archived planning documents
 ├── pyproject.toml                 # Modern Python package config
 └── README.md                      # This file
 ```
@@ -143,8 +144,8 @@ Previous versions of PocketPortal (v3.x) used a monolithic architecture. Migrati
 
 ---
 
-**Version:** 4.1.1
-**Release Date:** December 2024
+**Version:** 4.1.2
+**Release Date:** December 2025
 **License:** MIT
 
 **Built with ❤️ for privacy, modularity, and control**
