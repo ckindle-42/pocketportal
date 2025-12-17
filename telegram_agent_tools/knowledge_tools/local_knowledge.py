@@ -74,11 +74,25 @@ class LocalKnowledgeTool(BaseTool):
             examples=["Search for deployment instructions"]
         )
     
+    def _get_embedding(self, text: str) -> List[float]:
+        """Generate embedding for text (cached in model)"""
+        try:
+            if LocalKnowledgeTool._embeddings_model is None:
+                from sentence_transformers import SentenceTransformer
+                LocalKnowledgeTool._embeddings_model = SentenceTransformer('all-MiniLM-L6-v2')
+
+            # Generate embedding and convert to list for JSON serialization
+            embedding = LocalKnowledgeTool._embeddings_model.encode([text])[0]
+            return embedding.tolist()
+        except Exception as e:
+            print(f"Warning: Could not generate embedding: {e}")
+            return []
+
     async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """Execute knowledge base operation"""
         try:
             action = parameters.get("action", "").lower()
-            
+
             if action == "search":
                 return await self._search(
                     parameters.get("query", ""),
@@ -87,7 +101,7 @@ class LocalKnowledgeTool(BaseTool):
             elif action == "add":
                 doc_path = parameters.get("document_path")
                 content = parameters.get("content")
-                
+
                 if doc_path:
                     return await self._add_document(doc_path)
                 elif content:
@@ -100,68 +114,69 @@ class LocalKnowledgeTool(BaseTool):
                 return await self._clear()
             else:
                 return self._error_response(f"Unknown action: {action}")
-        
+
         except Exception as e:
             return self._error_response(str(e))
     
     async def _search(self, query: str, top_k: int) -> Dict[str, Any]:
-        """Search the knowledge base"""
+        """Search the knowledge base using cached embeddings"""
         if not query:
             return self._error_response("Query is required")
-        
+
         if not LocalKnowledgeTool._documents:
             return self._success_response({
                 "message": "Knowledge base is empty",
                 "results": []
             })
-        
+
         # Try to use sentence-transformers for semantic search
         try:
             from sentence_transformers import SentenceTransformer
             import numpy as np
-            
+
             # Initialize model if needed
             if LocalKnowledgeTool._embeddings_model is None:
-                LocalKnowledgeTool._embeddings_model = SentenceTransformer(
-                    'all-MiniLM-L6-v2'
-                )
-            
+                LocalKnowledgeTool._embeddings_model = SentenceTransformer('all-MiniLM-L6-v2')
+
             model = LocalKnowledgeTool._embeddings_model
-            
-            # Encode query
+
+            # Encode query once
             query_embedding = model.encode([query])[0]
-            
-            # Get document embeddings
-            doc_texts = [d['content'][:1000] for d in LocalKnowledgeTool._documents]
-            doc_embeddings = model.encode(doc_texts)
-            
-            # Calculate similarities
-            similarities = np.dot(doc_embeddings, query_embedding) / (
-                np.linalg.norm(doc_embeddings, axis=1) * np.linalg.norm(query_embedding)
-            )
-            
-            # Get top results
-            top_indices = np.argsort(similarities)[-top_k:][::-1]
-            
+
+            # Use cached embeddings from documents
             results = []
-            for idx in top_indices:
-                doc = LocalKnowledgeTool._documents[idx]
+            for doc in LocalKnowledgeTool._documents:
+                # Skip documents without embeddings
+                if 'embedding' not in doc or not doc['embedding']:
+                    continue
+
+                # Use stored embedding (much faster than recalculating!)
+                doc_emb = np.array(doc['embedding'])
+
+                # Calculate cosine similarity
+                score = np.dot(doc_emb, query_embedding) / (
+                    np.linalg.norm(doc_emb) * np.linalg.norm(query_embedding)
+                )
+
                 results.append({
                     "source": doc.get('source', 'unknown'),
                     "content": doc['content'][:500],
-                    "score": float(similarities[idx])
+                    "score": float(score)
                 })
-            
+
+            # Sort by score and return top_k
+            results.sort(key=lambda x: x['score'], reverse=True)
+
             return self._success_response({
                 "query": query,
-                "results": results
+                "results": results[:top_k]
             })
-        
+
         except ImportError:
             # Fallback to simple keyword search
             results = []
             query_lower = query.lower()
-            
+
             for doc in LocalKnowledgeTool._documents:
                 content_lower = doc['content'].lower()
                 if query_lower in content_lower:
@@ -170,7 +185,7 @@ class LocalKnowledgeTool(BaseTool):
                         "content": doc['content'][:500],
                         "score": 1.0 if query_lower in content_lower else 0.0
                     })
-            
+
             return self._success_response({
                 "query": query,
                 "results": results[:top_k],
@@ -178,7 +193,7 @@ class LocalKnowledgeTool(BaseTool):
             })
     
     async def _add_document(self, doc_path: str) -> Dict[str, Any]:
-        """Add document from file"""
+        """Add document from file with pre-computed embedding"""
         if not os.path.exists(doc_path):
             return self._error_response(f"File not found: {doc_path}")
 
@@ -193,11 +208,15 @@ class LocalKnowledgeTool(BaseTool):
                     content = f.read()
         except Exception as e:
             return self._error_response(f"Failed to read file: {e}")
-        
-        # Add to documents
+
+        # Generate embedding once at add time (not at search time!)
+        embedding = self._get_embedding(content[:1000])
+
+        # Add to documents with cached embedding
         LocalKnowledgeTool._documents.append({
             "source": doc_path,
             "content": content,
+            "embedding": embedding,  # CACHED for fast search!
             "added_at": Path(doc_path).stat().st_mtime
         })
 
@@ -210,10 +229,14 @@ class LocalKnowledgeTool(BaseTool):
         })
     
     async def _add_content(self, content: str) -> Dict[str, Any]:
-        """Add content directly"""
+        """Add content directly with pre-computed embedding"""
+        # Generate embedding once at add time (not at search time!)
+        embedding = self._get_embedding(content[:1000])
+
         LocalKnowledgeTool._documents.append({
             "source": "direct_input",
             "content": content,
+            "embedding": embedding,  # CACHED for fast search!
             "added_at": None
         })
 
