@@ -44,6 +44,9 @@ class IntelligentRouter:
         self.registry = registry
         self.strategy = strategy
         self.classifier = TaskClassifier()
+
+        # Verify model availability on initialization
+        self._verify_model_preferences()
     
     def route(self, query: str, max_cost: float = 1.0) -> RoutingDecision:
         """
@@ -89,11 +92,15 @@ class IntelligentRouter:
             reasoning=reasoning
         )
     
-    def _route_auto(self, classification: TaskClassification, 
+    def _route_auto(self, classification: TaskClassification,
                    max_cost: float) -> ModelMetadata:
         """Automatic balanced routing"""
-        
-        # Map complexity to model tiers
+
+        # NOTE: These model IDs should match your actual model registry.
+        # The routing system will fall back gracefully if specific models are unavailable.
+        # To customize: Update these preferences based on your available models.
+
+        # Map complexity to model tiers (prefer size-based selection)
         complexity_model_map = {
             TaskComplexity.TRIVIAL: ["ollama_qwen25_05b", "ollama_qwen25_1.5b"],
             TaskComplexity.SIMPLE: ["ollama_qwen25_1.5b", "ollama_llama32_3b", "ollama_qwen25_7b"],
@@ -101,23 +108,31 @@ class IntelligentRouter:
             TaskComplexity.COMPLEX: ["ollama_qwen25_14b", "ollama_qwen25_32b"],
             TaskComplexity.EXPERT: ["ollama_qwen25_32b", "ollama_qwen25_14b"]
         }
-        
+
         # Get category-specific preferences
         if classification.category == TaskCategory.CODE and classification.requires_code:
             preferred = ["ollama_qwen25_coder", "ollama_deepseek_coder", "ollama_qwen25_14b"]
         else:
             preferred = complexity_model_map.get(
-                classification.complexity, 
+                classification.complexity,
                 ["ollama_qwen25_7b"]
             )
-        
-        # Find first available model
+
+        # Find first available model from preferences
         for model_id in preferred:
             model = self.registry.get_model(model_id)
             if model and model.available and model.cost <= max_cost:
                 return model
-        
+
+        # If no preferred model available, try capability-based fallback
+        if classification.requires_code:
+            capability_fallback = self.registry.get_fastest_model(ModelCapability.CODE)
+            if capability_fallback and capability_fallback.available:
+                logger.info(f"Using capability-based fallback: {capability_fallback.model_id}")
+                return capability_fallback
+
         # Fallback to any available model
+        logger.warning("No preferred models available, using fallback")
         return self._get_any_available_model()
     
     def _route_speed(self, classification: TaskClassification) -> ModelMetadata:
@@ -224,22 +239,49 @@ class IntelligentRouter:
         
         raise RuntimeError("No models available in registry")
     
+    def _verify_model_preferences(self):
+        """Verify that preferred models exist in registry and log warnings if not"""
+
+        # All hardcoded model IDs used in routing
+        preferred_model_ids = {
+            # Complexity-based
+            "ollama_qwen25_05b", "ollama_qwen25_1.5b", "ollama_llama32_3b",
+            "ollama_qwen25_7b", "ollama_qwen25_14b", "ollama_qwen25_32b",
+            # Code-specific
+            "ollama_qwen25_coder", "ollama_deepseek_coder"
+        }
+
+        missing_models = []
+        for model_id in preferred_model_ids:
+            model = self.registry.get_model(model_id)
+            if not model:
+                missing_models.append(model_id)
+
+        if missing_models:
+            logger.warning(
+                f"Routing preferences reference {len(missing_models)} unavailable models: "
+                f"{', '.join(missing_models[:3])}{'...' if len(missing_models) > 3 else ''}. "
+                f"Routing will fall back to available models."
+            )
+        else:
+            logger.info("All preferred models found in registry")
+
     def _generate_reasoning(self, model: ModelMetadata,
                            classification: TaskClassification) -> str:
         """Generate human-readable reasoning for selection"""
-        
+
         parts = []
-        
+
         # Complexity
         parts.append(f"Task: {classification.complexity.value} complexity")
-        
+
         # Category
         parts.append(f"Category: {classification.category.value}")
-        
+
         # Model choice
         parts.append(f"Selected: {model.display_name}")
-        
+
         # Speed/quality tradeoff
         parts.append(f"Speed: {model.speed_class.value}")
-        
+
         return " | ".join(parts)

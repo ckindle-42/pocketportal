@@ -8,6 +8,7 @@ using the Model Context Protocol (MCP) standard adopted by major AI providers.
 
 import asyncio
 import logging
+import os
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 import sys
@@ -225,11 +226,28 @@ class MCPConnectorTool(BaseTool):
                 )
         
         try:
+            # Security: Create safe environment with only necessary variables
+            # to prevent leaking sensitive tokens/keys to MCP subprocesses
+            safe_env = {
+                # System essentials
+                'PATH': os.environ.get('PATH', ''),
+                'HOME': os.environ.get('HOME', ''),
+                'LANG': os.environ.get('LANG', 'en_US.UTF-8'),
+                'USER': os.environ.get('USER', ''),
+                'SHELL': os.environ.get('SHELL', ''),
+            }
+
+            # Add only specific required environment variables for this server
+            for var_name in config.get("env_vars", []):
+                if var_name in os.environ:
+                    safe_env[var_name] = os.environ[var_name]
+                    logger.info(f"Added {var_name} to MCP environment for {server_name}")
+
             # Create server parameters
             server_params = StdioServerParameters(
                 command=config["command"],
                 args=config["args"],
-                env=dict(os.environ)  # Pass current environment
+                env=safe_env  # Pass sanitized environment
             )
             
             # Connect to server
