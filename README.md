@@ -500,6 +500,6 @@ This bundle contains **everything** needed to deploy a production-grade, privacy
 **Version:** 3.1.0  
 **Release Date:** December 17, 2025  
 **Bundle Size:** Complete deployment package  
-**License:** MIT (or your choice)
+**License:** MIT
 
 **Built with ❤️ for privacy, autonomy, and control**
