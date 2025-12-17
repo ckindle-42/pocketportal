@@ -241,6 +241,199 @@ def cmd_list_tools(args):
         sys.exit(1)
 
 
+def cmd_verify(args):
+    """Handle 'verify' command - verify installation"""
+    setup_logging(args.log_level, args.log_format)
+
+    from pathlib import Path
+    import shutil
+
+    # Colors for output
+    class Colors:
+        GREEN = '\033[92m'
+        RED = '\033[91m'
+        YELLOW = '\033[93m'
+        BLUE = '\033[94m'
+        END = '\033[0m'
+        BOLD = '\033[1m'
+
+    def print_success(text):
+        print(f"{Colors.GREEN}✓ {text}{Colors.END}")
+
+    def print_error(text):
+        print(f"{Colors.RED}✗ {text}{Colors.END}")
+
+    def print_warning(text):
+        print(f"{Colors.YELLOW}⚠ {text}{Colors.END}")
+
+    def print_header(text):
+        print(f"\n{Colors.BOLD}{Colors.BLUE}{'='*60}{Colors.END}")
+        print(f"{Colors.BOLD}{Colors.BLUE}{text}{Colors.END}")
+        print(f"{Colors.BOLD}{Colors.BLUE}{'='*60}{Colors.END}\n")
+
+    results = []
+
+    # Check 1: Python version
+    print_header("Python Version")
+    major, minor = sys.version_info[:2]
+    if major == 3 and minor >= 11:
+        print_success(f"Python {major}.{minor}.{sys.version_info.micro}")
+        results.append(True)
+    else:
+        print_error(f"Python {major}.{minor} - Need 3.11 or higher")
+        results.append(False)
+
+    # Check 2: Virtual environment
+    print_header("Virtual Environment")
+    if sys.prefix != sys.base_prefix:
+        print_success(f"Virtual environment: {sys.prefix}")
+        results.append(True)
+    else:
+        print_warning("Not in virtual environment (recommended but optional)")
+        results.append(True)
+
+    # Check 3: Package structure
+    print_header("Package Structure")
+    required_modules = [
+        'pocketportal.core',
+        'pocketportal.config',
+        'pocketportal.tools',
+        'pocketportal.interfaces',
+    ]
+
+    all_modules_exist = True
+    for module_name in required_modules:
+        try:
+            __import__(module_name)
+        except ImportError:
+            print_error(f"Missing module: {module_name}")
+            all_modules_exist = False
+
+    if all_modules_exist:
+        print_success(f"All {len(required_modules)} core modules exist")
+        results.append(True)
+    else:
+        results.append(False)
+
+    # Check 4: Core dependencies
+    print_header("Core Dependencies")
+    core_deps = [
+        ('telegram', 'python-telegram-bot'),
+        ('dotenv', 'python-dotenv'),
+        ('pydantic', 'pydantic'),
+        ('aiohttp', 'aiohttp'),
+        ('cryptography', 'cryptography'),
+    ]
+
+    all_installed = True
+    for module_name, package_name in core_deps:
+        try:
+            __import__(module_name)
+        except ImportError:
+            print_error(f"Missing: {package_name}")
+            all_installed = False
+
+    if all_installed:
+        print_success(f"All {len(core_deps)} core dependencies installed")
+        results.append(True)
+    else:
+        results.append(False)
+
+    # Check 5: Configuration
+    print_header("Configuration")
+    try:
+        from pocketportal.config import load_settings
+        settings = load_settings()
+        errors = settings.validate_required_config()
+
+        if errors:
+            for error in errors:
+                print_error(error)
+            results.append(False)
+        else:
+            print_success("Configuration is valid")
+            print_success(f"  Models configured: {len(settings.models)}")
+            print_success(f"  Telegram enabled: {settings.interfaces.telegram is not None}")
+            print_success(f"  Web enabled: {settings.interfaces.web is not None}")
+            results.append(True)
+    except Exception as e:
+        print_error(f"Configuration error: {e}")
+        results.append(False)
+
+    # Check 6: Tools system
+    print_header("Tools System")
+    try:
+        from pocketportal.tools import registry
+        loaded, failed = registry.discover_and_load()
+
+        if loaded > 0:
+            print_success(f"Tools loaded: {loaded} loaded, {failed} failed")
+            results.append(True)
+        else:
+            print_warning("No tools loaded yet")
+            results.append(True)
+    except Exception as e:
+        print_error(f"Tool system error: {e}")
+        results.append(False)
+
+    # Check 7: Disk space
+    print_header("Disk Space")
+    try:
+        total, used, free = shutil.disk_usage(Path.home())
+        free_gb = free // (2**30)
+
+        if free_gb > 10:
+            print_success(f"Disk space: {free_gb}GB free")
+            results.append(True)
+        else:
+            print_warning(f"Low disk space: {free_gb}GB free")
+            results.append(True)
+    except Exception as e:
+        print_warning(f"Disk space check failed: {e}")
+        results.append(True)
+
+    # Check 8: System memory (if psutil available)
+    print_header("System Memory")
+    try:
+        import psutil
+        mem = psutil.virtual_memory()
+        total_gb = mem.total // (2**30)
+        available_gb = mem.available // (2**30)
+
+        print_success(f"Memory: {available_gb}GB available / {total_gb}GB total")
+        results.append(True)
+    except ImportError:
+        print_warning("psutil not installed (memory check skipped)")
+        results.append(True)
+    except Exception as e:
+        print_warning(f"Memory check failed: {e}")
+        results.append(True)
+
+    # Summary
+    print(f"\n{Colors.BOLD}{'='*60}{Colors.END}")
+    print(f"{Colors.BOLD}Summary{Colors.END}")
+    print(f"{Colors.BOLD}{'='*60}{Colors.END}\n")
+
+    passed = sum(1 for r in results if r is True)
+    failed = sum(1 for r in results if r is False)
+
+    print(f"Total checks: {len(results)}")
+    print_success(f"Passed: {passed}")
+    if failed > 0:
+        print_error(f"Failed: {failed}")
+
+    print(f"\n{Colors.BOLD}{'='*60}{Colors.END}")
+    if failed == 0:
+        print_success("ALL CHECKS PASSED!")
+        print(f"\n{Colors.GREEN}PocketPortal is ready to use{Colors.END}")
+    else:
+        print_error("SOME CHECKS FAILED")
+        print(f"\n{Colors.YELLOW}Please fix the issues above before proceeding{Colors.END}")
+    print(f"{Colors.BOLD}{'='*60}{Colors.END}\n")
+
+    sys.exit(0 if failed == 0 else 1)
+
+
 def cmd_version(args):
     """Handle 'version' command"""
     print(f"PocketPortal {__version__}")
@@ -320,6 +513,13 @@ def main():
         help="List all available tools"
     )
     list_tools_parser.set_defaults(func=cmd_list_tools)
+
+    # Verify command
+    verify_parser = subparsers.add_parser(
+        "verify",
+        help="Verify installation and configuration"
+    )
+    verify_parser.set_defaults(func=cmd_verify)
 
     # Version command (also handled by --version)
     version_parser = subparsers.add_parser(
