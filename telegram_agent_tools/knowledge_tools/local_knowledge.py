@@ -148,31 +148,50 @@ class LocalKnowledgeTool(BaseTool):
             # Encode query once
             query_embedding = model.encode([query])[0]
 
-            # Use cached embeddings from documents
-            results = []
-            for doc in LocalKnowledgeTool._documents:
-                # Skip documents without embeddings
-                if 'embedding' not in doc or not doc['embedding']:
-                    continue
+            # Filter documents with valid embeddings
+            valid_docs = [
+                doc for doc in LocalKnowledgeTool._documents
+                if 'embedding' in doc and doc['embedding']
+            ]
 
-                # Use stored embedding (much faster than recalculating!)
-                doc_emb = np.array(doc['embedding'])
-
-                # Calculate cosine similarity with safety check for zero vectors
-                norm_product = np.linalg.norm(doc_emb) * np.linalg.norm(query_embedding)
-                if norm_product == 0:
-                    score = 0.0
-                else:
-                    score = np.dot(doc_emb, query_embedding) / norm_product
-
-                results.append({
-                    "source": doc.get('source', 'unknown'),
-                    "content": doc['content'][:500],
-                    "score": float(score)
+            if not valid_docs:
+                return self._success_response({
+                    "query": query,
+                    "results": []
                 })
 
-            # Sort by score and return top_k
-            results.sort(key=lambda x: x['score'], reverse=True)
+            # Vectorized similarity computation using NumPy matrix operations
+            # Pre-convert all embeddings to a single 2D matrix (much faster!)
+            embedding_matrix = np.array([doc['embedding'] for doc in valid_docs])
+            query_vec = np.array(query_embedding)
+
+            # Calculate all cosine similarities at once using matrix multiplication
+            # Normalize embeddings
+            embedding_norms = np.linalg.norm(embedding_matrix, axis=1, keepdims=True)
+            query_norm = np.linalg.norm(query_vec)
+
+            # Avoid division by zero
+            embedding_norms = np.where(embedding_norms == 0, 1, embedding_norms)
+            query_norm = query_norm if query_norm != 0 else 1
+
+            normalized_embeddings = embedding_matrix / embedding_norms
+            normalized_query = query_vec / query_norm
+
+            # Compute all similarities at once with vectorized dot product
+            scores = np.dot(normalized_embeddings, normalized_query)
+
+            # Get top k indices using argsort (much faster than sorting full list)
+            top_k_indices = np.argsort(scores)[::-1][:top_k]
+
+            # Build results from top k matches
+            results = [
+                {
+                    "source": valid_docs[idx].get('source', 'unknown'),
+                    "content": valid_docs[idx]['content'][:500],
+                    "score": float(scores[idx])
+                }
+                for idx in top_k_indices
+            ]
 
             return self._success_response({
                 "query": query,
