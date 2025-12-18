@@ -1,4 +1,4 @@
-# PocketPortal 4.7.0 - Installation & Setup Guide
+# PocketPortal - Installation & Setup Guide
 
 **Production-Grade AI Agent Platform - Complete Setup in 30 Minutes**
 
@@ -140,6 +140,62 @@ pocketportal --help
 ---
 
 ## Configuration
+
+### Configuration Precedence Hierarchy
+
+**IMPORTANT:** PocketPortal loads configuration from multiple sources with the following priority order (highest to lowest):
+
+1. **Environment Variables** (highest priority)
+   - Loaded from system environment or `.env` file
+   - Example: `TELEGRAM_BOT_TOKEN`, `OLLAMA_HOST`, `LOG_LEVEL`
+   - Best for: Secrets, deployment-specific settings, Docker/Kubernetes
+
+2. **Configuration File** (`config.yaml`)
+   - Loaded from `~/.config/pocketportal/config.yaml` or `POCKETPORTAL_CONFIG_DIR`
+   - Example: Interface settings, LLM backends, tool configurations
+   - Best for: Structured settings, production deployments
+
+3. **Default Values** (lowest priority)
+   - Built-in defaults defined in code
+   - Example: `LOG_LEVEL=INFO`, `RATE_LIMIT_MESSAGES_PER_MINUTE=30`
+   - Best for: Sensible defaults that work out-of-the-box
+
+**Configuration Resolution Example:**
+```bash
+# If you have:
+# - Default: LOG_LEVEL=INFO
+# - config.yaml: LOG_LEVEL=DEBUG
+# - Environment: LOG_LEVEL=ERROR
+
+# Result: LOG_LEVEL=ERROR (environment wins)
+```
+
+**Startup Logging:**
+PocketPortal logs the active configuration source at startup:
+```
+INFO - Configuration loaded from: environment variables
+INFO - Using LLM backend: ollama (http://localhost:11434)
+INFO - Log level: INFO (from environment)
+```
+
+### Recommended Dependency Groups
+
+**For Production Deployments:**
+```bash
+# Minimal production image (excludes dev tools)
+pip install -e ".[tools,data,documents,audio,knowledge,mcp,observability,distributed]"
+
+# This excludes:
+# - dev: pytest, black, ruff, mypy (development tools)
+# - browser: Playwright (heavy dependency, ~200MB)
+# - security: Docker client (if sandboxing not needed)
+```
+
+**For Development:**
+```bash
+# Full installation including dev tools
+pip install -e ".[all]"
+```
 
 ### Step 1: Create Configuration Directory
 
@@ -738,7 +794,6 @@ pocketportal start --interface telegram
 
 ---
 
-**Version**: 4.7.0
 **Last Updated**: December 2025
 **Installation Time**: ~30 minutes
 

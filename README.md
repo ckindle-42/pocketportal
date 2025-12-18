@@ -1,30 +1,16 @@
-# 🚀 PocketPortal 4.7.0 - One-for-All AI Agent Platform
+# 🚀 PocketPortal - One-for-All AI Agent Platform
 
 **Privacy-First, Interface-Agnostic AI Agent with Professional Architecture and Enterprise Features**
 
 ---
 
-## 🎉 PocketPortal 4.7.0 - Production Reliability & Operational Excellence
+## 🎉 Production Reliability & Operational Excellence
 
-**PocketPortal 4.7.0** achieves production-grade reliability with watchdog monitoring, automated log rotation, enhanced graceful shutdown, and refined circuit breaker patterns.
+**PocketPortal** achieves production-grade reliability with watchdog monitoring, automated log rotation, enhanced graceful shutdown, and refined circuit breaker patterns.
 
-### Evolution from 3.x to 4.7.0
+### Key Features
 
-```
-v3.x:   Telegram Bot → [Monolithic Logic]
-v4.0:   Any Interface → Security → AgentCore → Router → LLM
-v4.2:   + DAO Pattern + Dynamic Discovery + Lazy Loading
-v4.3:   + Plugin Ecosystem + Observability + Testing Infrastructure
-v4.4:   + Async Job Queue + MCP Protocol Mesh + Full Observability Stack
-v4.4.1: + Operational Cleanup + Version SSOT + ToolManifest + DLQ CLI
-v4.5.1: + Modular Interfaces + Lifecycle Management + Approval Protocol
-        + Stateful Execution + Cost Tracking + Secret Abstraction
-v4.6.0: + Strict src-layout + Circuit Breaker Pattern
-v4.7.0: + Watchdog Auto-Recovery + Log Rotation + Enhanced Graceful Shutdown
-        + Factory Decoupling + Configurable Circuit Breaker
-```
-
-**Core Improvements (4.0-4.7):**
+**Core Capabilities:**
 - ✅ **Modular Architecture**: Add Web/Slack/Discord/API interfaces easily
 - ✅ **Dependency Injection**: Fully testable without loading LLMs
 - ✅ **Structured Errors**: Custom exceptions instead of string returns
@@ -169,8 +155,6 @@ Previous versions of PocketPortal (v3.x) used a monolithic architecture. Migrati
 
 ---
 
-**Version:** 4.7.0
-**Release Date:** December 2025
 **License:** MIT
 
 **Built with ❤️ for privacy, modularity, extensibility, production-readiness, reliability, and architectural excellence**
