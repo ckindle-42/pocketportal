@@ -6,7 +6,9 @@ This module provides lifecycle management for PocketPortal, handling:
 - Application bootstrap (loading config, initializing DI container)
 - Starting the event bus and core services
 - OS signal handling (SIGINT/SIGTERM)
-- Graceful shutdown
+- Graceful shutdown with timeouts and draining
+
+v4.7.0: Enhanced with timeout handling, task draining, and shutdown priorities
 
 This decouples lifecycle concerns from the Engine, which should
 purely process input/output.
@@ -17,15 +19,18 @@ Architecture:
                  ├─ DI Container
                  ├─ Event Bus
                  ├─ Signal Handling
-                 └─ Shutdown Sequence
+                 ├─ Watchdog (v4.7.0)
+                 ├─ Log Rotation (v4.7.0)
+                 └─ Shutdown Sequence (Enhanced v4.7.0)
 """
 
 import asyncio
 import logging
 import signal
 import sys
-from typing import Optional, Callable, List
+from typing import Optional, Callable, List, Set
 from dataclasses import dataclass, field
+from enum import Enum
 
 from pocketportal.config.settings import Settings, load_settings
 from pocketportal.core import create_agent_core, AgentCore
@@ -36,18 +41,54 @@ from pocketportal.core.structured_logger import get_logger
 logger = get_logger('Lifecycle')
 
 
+class ShutdownPriority(Enum):
+    """
+    Shutdown priority levels.
+
+    Higher priority items shut down first.
+    """
+    CRITICAL = 100   # Stop accepting new work
+    HIGH = 75        # Stop processing new requests
+    NORMAL = 50      # Normal cleanup
+    LOW = 25         # Background tasks
+    LOWEST = 0       # Final cleanup
+
+
+@dataclass
+class ShutdownCallback:
+    """
+    Shutdown callback with priority.
+
+    v4.7.0: Added priority-based shutdown
+    """
+    callback: Callable
+    priority: ShutdownPriority
+    name: str
+    timeout: Optional[float] = None  # Optional per-callback timeout
+
+
 @dataclass
 class RuntimeContext:
     """
     Runtime context containing all initialized components
 
     This serves as the DI container for the application.
+
+    v4.7.0: Enhanced with watchdog and log rotation support
     """
     settings: Settings
     event_broker: EventBroker
     agent_core: AgentCore
     secure_agent: SecurityMiddleware
-    shutdown_callbacks: List[Callable] = field(default_factory=list)
+    shutdown_callbacks: List[ShutdownCallback] = field(default_factory=list)
+
+    # v4.7.0: New optional components
+    watchdog: Optional['Watchdog'] = None
+    log_rotator: Optional['LogRotator'] = None
+
+    # v4.7.0: Track in-flight operations
+    active_tasks: Set[asyncio.Task] = field(default_factory=set)
+    accepting_work: bool = True
 
 
 class Runtime:
@@ -60,17 +101,30 @@ class Runtime:
     3. Lifecycle management: Start/stop services
     """
 
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(
+        self,
+        config_path: Optional[str] = None,
+        enable_watchdog: bool = False,
+        enable_log_rotation: bool = False,
+        shutdown_timeout: float = 30.0
+    ):
         """
         Initialize runtime
 
         Args:
             config_path: Optional path to configuration file
+            enable_watchdog: Enable watchdog monitoring (v4.7.0)
+            enable_log_rotation: Enable log rotation (v4.7.0)
+            shutdown_timeout: Maximum time to wait for graceful shutdown (v4.7.0)
         """
         self.config_path = config_path
+        self.enable_watchdog = enable_watchdog
+        self.enable_log_rotation = enable_log_rotation
+        self.shutdown_timeout = shutdown_timeout
         self.context: Optional[RuntimeContext] = None
         self._shutdown_event = asyncio.Event()
         self._initialized = False
+        self._shutdown_in_progress = False
 
     async def bootstrap(self) -> RuntimeContext:
         """
@@ -111,7 +165,27 @@ class Runtime:
             enable_input_sanitization=True
         )
 
-        # Step 5: Setup signal handlers
+        # Step 5: Initialize watchdog (v4.7.0)
+        watchdog = None
+        if self.enable_watchdog:
+            from pocketportal.observability.watchdog import Watchdog, WatchdogConfig
+            logger.info("Initializing watchdog")
+            watchdog = Watchdog(config=WatchdogConfig())
+            # Note: Components will be registered after context creation
+
+        # Step 6: Initialize log rotation (v4.7.0)
+        log_rotator = None
+        if self.enable_log_rotation:
+            from pocketportal.observability.log_rotation import LogRotator, RotationConfig
+            from pathlib import Path
+            log_file = settings.data_dir / "logs" / "pocketportal.log"
+            logger.info(f"Initializing log rotation for {log_file}")
+            log_rotator = LogRotator(
+                log_file=log_file,
+                config=RotationConfig()
+            )
+
+        # Step 7: Setup signal handlers
         self._setup_signal_handlers()
 
         # Create runtime context
@@ -119,11 +193,23 @@ class Runtime:
             settings=settings,
             event_broker=event_broker,
             agent_core=agent_core,
-            secure_agent=secure_agent
+            secure_agent=secure_agent,
+            watchdog=watchdog,
+            log_rotator=log_rotator
         )
 
+        # Start optional components (v4.7.0)
+        if watchdog:
+            await watchdog.start()
+        if log_rotator:
+            await log_rotator.start()
+
         self._initialized = True
-        logger.info("Runtime bootstrap completed")
+        logger.info(
+            "Runtime bootstrap completed",
+            watchdog_enabled=self.enable_watchdog,
+            log_rotation_enabled=self.enable_log_rotation
+        )
 
         return self.context
 
@@ -147,55 +233,237 @@ class Runtime:
 
     async def shutdown(self):
         """
-        Graceful shutdown sequence
+        Enhanced graceful shutdown sequence
 
-        Stops all services in reverse order of initialization.
+        v4.7.0: Added timeout handling, task draining, and priority-based shutdown
+
+        Stops all services in priority order with proper timeout handling.
         """
         if not self._initialized:
             logger.warning("Runtime not initialized, nothing to shutdown")
             return
 
-        logger.info("Starting graceful shutdown")
+        if self._shutdown_in_progress:
+            logger.warning("Shutdown already in progress")
+            return
 
-        # Run custom shutdown callbacks
-        for callback in self.context.shutdown_callbacks:
+        self._shutdown_in_progress = True
+        shutdown_start = asyncio.get_event_loop().time()
+
+        logger.info(
+            "Starting graceful shutdown",
+            timeout_seconds=self.shutdown_timeout
+        )
+
+        try:
+            # Phase 1: Stop accepting new work (CRITICAL priority)
+            logger.info("Phase 1: Stopping new work acceptance")
+            self.context.accepting_work = False
+
+            # Phase 2: Wait for in-flight operations to complete
+            logger.info(
+                "Phase 2: Draining in-flight operations",
+                active_tasks=len(self.context.active_tasks)
+            )
+
+            if self.context.active_tasks:
+                try:
+                    await asyncio.wait_for(
+                        self._drain_active_tasks(),
+                        timeout=self.shutdown_timeout * 0.5  # Use half timeout for draining
+                    )
+                    logger.info("All in-flight operations completed")
+                except asyncio.TimeoutError:
+                    logger.warning(
+                        f"Timeout waiting for tasks to drain, {len(self.context.active_tasks)} tasks still active"
+                    )
+
+            # Phase 3: Stop optional components (v4.7.0)
+            logger.info("Phase 3: Stopping optional components")
+
+            if self.context.watchdog:
+                try:
+                    logger.info("Stopping watchdog")
+                    await asyncio.wait_for(
+                        self.context.watchdog.stop(),
+                        timeout=5.0
+                    )
+                except Exception as e:
+                    logger.error(f"Error stopping watchdog: {e}", exc_info=True)
+
+            if self.context.log_rotator:
+                try:
+                    logger.info("Stopping log rotator")
+                    await asyncio.wait_for(
+                        self.context.log_rotator.stop(),
+                        timeout=5.0
+                    )
+                except Exception as e:
+                    logger.error(f"Error stopping log rotator: {e}", exc_info=True)
+
+            # Phase 4: Run custom shutdown callbacks in priority order
+            logger.info("Phase 4: Running shutdown callbacks")
+
+            # Sort callbacks by priority (highest first)
+            sorted_callbacks = sorted(
+                self.context.shutdown_callbacks,
+                key=lambda cb: cb.priority.value,
+                reverse=True
+            )
+
+            for callback in sorted_callbacks:
+                try:
+                    callback_timeout = callback.timeout or 10.0
+                    logger.debug(
+                        f"Executing shutdown callback: {callback.name}",
+                        priority=callback.priority.value,
+                        timeout=callback_timeout
+                    )
+
+                    if asyncio.iscoroutinefunction(callback.callback):
+                        await asyncio.wait_for(
+                            callback.callback(),
+                            timeout=callback_timeout
+                        )
+                    else:
+                        # Run sync callback in thread pool
+                        loop = asyncio.get_event_loop()
+                        await asyncio.wait_for(
+                            loop.run_in_executor(None, callback.callback),
+                            timeout=callback_timeout
+                        )
+
+                except asyncio.TimeoutError:
+                    logger.error(
+                        f"Shutdown callback timed out: {callback.name}",
+                        timeout=callback_timeout
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Error in shutdown callback {callback.name}: {e}",
+                        exc_info=True
+                    )
+
+            # Phase 5: Cleanup agent core
+            logger.info("Phase 5: Cleaning up agent core")
             try:
-                logger.debug(f"Executing shutdown callback: {callback.__name__}")
-                if asyncio.iscoroutinefunction(callback):
-                    await callback()
-                else:
-                    callback()
+                await asyncio.wait_for(
+                    self.context.secure_agent.cleanup(),
+                    timeout=10.0
+                )
             except Exception as e:
-                logger.error(f"Error in shutdown callback: {e}", exc_info=True)
+                logger.error(f"Error cleaning up agent core: {e}", exc_info=True)
 
-        # Cleanup agent core
-        try:
-            logger.info("Cleaning up agent core")
-            await self.context.secure_agent.cleanup()
+            # Phase 6: Clear event history
+            logger.info("Phase 6: Clearing event history")
+            try:
+                await asyncio.wait_for(
+                    self.context.event_broker.clear_history(),
+                    timeout=5.0
+                )
+            except Exception as e:
+                logger.error(f"Error clearing event history: {e}", exc_info=True)
+
+            # Calculate shutdown duration
+            shutdown_duration = asyncio.get_event_loop().time() - shutdown_start
+
+            self._initialized = False
+            logger.info(
+                "Shutdown completed",
+                duration_seconds=shutdown_duration,
+                within_timeout=shutdown_duration < self.shutdown_timeout
+            )
+
         except Exception as e:
-            logger.error(f"Error cleaning up agent core: {e}", exc_info=True)
+            logger.error(f"Critical error during shutdown: {e}", exc_info=True)
+        finally:
+            self._shutdown_in_progress = False
 
-        # Clear event history
-        try:
-            logger.info("Clearing event history")
-            await self.context.event_broker.clear_history()
-        except Exception as e:
-            logger.error(f"Error clearing event history: {e}", exc_info=True)
+    async def _drain_active_tasks(self):
+        """
+        Wait for all active tasks to complete.
 
-        self._initialized = False
-        logger.info("Shutdown completed")
+        v4.7.0: New method for draining in-flight operations
+        """
+        while self.context.active_tasks:
+            # Cancel any tasks that are still running
+            done, pending = await asyncio.wait(
+                self.context.active_tasks,
+                timeout=1.0,
+                return_when=asyncio.FIRST_COMPLETED
+            )
 
-    def register_shutdown_callback(self, callback: Callable):
+            # Remove completed tasks
+            for task in done:
+                self.context.active_tasks.discard(task)
+
+            logger.debug(
+                "Draining tasks",
+                completed=len(done),
+                remaining=len(self.context.active_tasks)
+            )
+
+    def register_shutdown_callback(
+        self,
+        callback: Callable,
+        priority: ShutdownPriority = ShutdownPriority.NORMAL,
+        name: Optional[str] = None,
+        timeout: Optional[float] = None
+    ):
         """
         Register a callback to be executed during shutdown
 
+        v4.7.0: Enhanced with priority and timeout support
+
         Args:
             callback: Function or coroutine to execute
+            priority: Shutdown priority (higher runs first)
+            name: Optional callback name for logging
+            timeout: Optional per-callback timeout
+        """
+        if not self.context:
+            logger.warning("Cannot register shutdown callback: Runtime not initialized")
+            return
+
+        callback_name = name or getattr(callback, '__name__', 'unknown')
+
+        shutdown_callback = ShutdownCallback(
+            callback=callback,
+            priority=priority,
+            name=callback_name,
+            timeout=timeout
+        )
+
+        self.context.shutdown_callbacks.append(shutdown_callback)
+
+        logger.debug(
+            f"Registered shutdown callback: {callback_name}",
+            priority=priority.value
+        )
+
+    def track_task(self, task: asyncio.Task):
+        """
+        Track an active task for graceful shutdown draining.
+
+        v4.7.0: New method for tracking in-flight operations
+
+        Args:
+            task: Task to track
         """
         if self.context:
-            self.context.shutdown_callbacks.append(callback)
-        else:
-            logger.warning("Cannot register shutdown callback: Runtime not initialized")
+            self.context.active_tasks.add(task)
+            task.add_done_callback(lambda t: self.context.active_tasks.discard(t))
+
+    def is_accepting_work(self) -> bool:
+        """
+        Check if runtime is accepting new work.
+
+        v4.7.0: New method to check shutdown state
+
+        Returns:
+            True if accepting work, False if shutting down
+        """
+        return self.context and self.context.accepting_work and not self._shutdown_in_progress
 
 
 async def run_with_lifecycle(

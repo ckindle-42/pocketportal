@@ -182,16 +182,24 @@ class ExecutionEngine:
             )
         }
 
-        # Circuit breaker for backend failure protection
+        # Execution settings
+        self.max_retries = self.config.get('max_retries', 3)
+        self.timeout_seconds = self.config.get('timeout_seconds', 60)
+
+        # Circuit breaker for backend failure protection (v4.6.2: Made configurable)
+        self.circuit_breaker_enabled = self.config.get('circuit_breaker_enabled', True)
         self.circuit_breaker = CircuitBreaker(
             failure_threshold=self.config.get('circuit_breaker_threshold', 3),
             recovery_timeout=self.config.get('circuit_breaker_timeout', 60),
             half_open_max_calls=self.config.get('circuit_breaker_half_open_calls', 1)
-        )
+        ) if self.circuit_breaker_enabled else None
 
-        # Execution settings
-        self.max_retries = self.config.get('max_retries', 3)
-        self.timeout_seconds = self.config.get('timeout_seconds', 60)
+        logger.info(
+            f"ExecutionEngine initialized",
+            circuit_breaker_enabled=self.circuit_breaker_enabled,
+            max_retries=self.max_retries,
+            timeout_seconds=self.timeout_seconds
+        )
     
     async def execute(self, query: str, system_prompt: Optional[str] = None,
                      max_tokens: int = 2048, temperature: float = 0.7,
@@ -233,17 +241,19 @@ class ExecutionEngine:
                     logger.warning(f"No backend for {model.backend}")
                     continue
 
-                # Check circuit breaker
-                allowed, reason = self.circuit_breaker.should_allow_request(model.backend)
-                if not allowed:
-                    logger.info(f"Circuit breaker blocked {model.backend}: {reason}")
-                    fallbacks_used += 1
-                    continue
+                # Check circuit breaker (v4.6.2: Skip if disabled)
+                if self.circuit_breaker:
+                    allowed, reason = self.circuit_breaker.should_allow_request(model.backend)
+                    if not allowed:
+                        logger.info(f"Circuit breaker blocked {model.backend}: {reason}")
+                        fallbacks_used += 1
+                        continue
 
                 # Check availability
                 if not await backend.is_available():
                     logger.warning(f"Backend {model.backend} not available")
-                    self.circuit_breaker.record_failure(model.backend)
+                    if self.circuit_breaker:
+                        self.circuit_breaker.record_failure(model.backend)
                     continue
 
                 # Execute generation
@@ -258,7 +268,8 @@ class ExecutionEngine:
 
                 if result.success:
                     # Record success in circuit breaker
-                    self.circuit_breaker.record_success(model.backend)
+                    if self.circuit_breaker:
+                        self.circuit_breaker.record_success(model.backend)
 
                     elapsed = (time.time() - start_time) * 1000
 
@@ -273,14 +284,15 @@ class ExecutionEngine:
                     )
                 else:
                     # Record failure in circuit breaker
-                    self.circuit_breaker.record_failure(model.backend)
+                    if self.circuit_breaker:
+                        self.circuit_breaker.record_failure(model.backend)
                     last_error = result.error
                     fallbacks_used += 1
                     logger.warning(f"Model {model_id} failed: {result.error}")
 
             except Exception as e:
                 # Record exception as failure
-                if model and model.backend:
+                if model and model.backend and self.circuit_breaker:
                     self.circuit_breaker.record_failure(model.backend)
                 last_error = str(e)
                 fallbacks_used += 1
@@ -346,24 +358,35 @@ class ExecutionEngine:
                 await backend.close()
     
     async def health_check(self) -> Dict[str, Any]:
-        """Check health of all backends including circuit breaker status"""
+        """
+        Check health of all backends including circuit breaker status
 
+        v4.6.2: Enhanced to handle disabled circuit breaker
+        """
         health = {}
 
         for name, backend in self.backends.items():
             try:
                 is_available = await backend.is_available()
-                circuit_state = self.circuit_breaker.get_state(name)
 
-                health[name] = {
-                    'available': is_available,
-                    'circuit_state': circuit_state.value,
-                    'failure_count': self.circuit_breaker.failure_counts[name]
+                health_info = {
+                    'available': is_available
                 }
+
+                # Add circuit breaker info if enabled
+                if self.circuit_breaker:
+                    circuit_state = self.circuit_breaker.get_state(name)
+                    health_info['circuit_state'] = circuit_state.value
+                    health_info['failure_count'] = self.circuit_breaker.failure_counts[name]
+                else:
+                    health_info['circuit_state'] = 'disabled'
+
+                health[name] = health_info
+
             except Exception as e:
                 health[name] = {
                     'available': False,
-                    'circuit_state': self.circuit_breaker.get_state(name).value,
+                    'circuit_state': self.circuit_breaker.get_state(name).value if self.circuit_breaker else 'disabled',
                     'error': str(e)
                 }
                 logger.error(f"Health check failed for {name}: {e}")
@@ -371,11 +394,21 @@ class ExecutionEngine:
         return health
 
     def get_circuit_breaker_status(self) -> Dict[str, Dict[str, Any]]:
-        """Get detailed circuit breaker status for all backends"""
-        status = {}
+        """
+        Get detailed circuit breaker status for all backends
+
+        v4.6.2: Returns disabled status when circuit breaker is off
+        """
+        if not self.circuit_breaker:
+            return {
+                'enabled': False,
+                'backends': {name: {'state': 'disabled'} for name in self.backends.keys()}
+            }
+
+        status = {'enabled': True, 'backends': {}}
 
         for backend_name in self.backends.keys():
-            status[backend_name] = {
+            status['backends'][backend_name] = {
                 'state': self.circuit_breaker.get_state(backend_name).value,
                 'failure_count': self.circuit_breaker.failure_counts[backend_name],
                 'last_failure_time': self.circuit_breaker.last_failure_times.get(backend_name)
@@ -384,9 +417,27 @@ class ExecutionEngine:
         return status
 
     def reset_circuit_breaker(self, backend_name: str):
-        """Manually reset circuit breaker for a backend"""
+        """
+        Manually reset circuit breaker for a backend
+
+        v4.6.2: Safe handling when circuit breaker is disabled
+        """
+        if not self.circuit_breaker:
+            logger.warning("Circuit breaker is disabled, cannot reset")
+            return
+
         if backend_name in self.backends:
             self.circuit_breaker.reset(backend_name)
             logger.info(f"Manually reset circuit breaker for {backend_name}")
         else:
             logger.warning(f"Unknown backend: {backend_name}")
+
+    async def cleanup(self):
+        """
+        Cleanup resources
+
+        v4.6.2: Added cleanup method for graceful shutdown
+        """
+        logger.info("Cleaning up ExecutionEngine...")
+        await self.close()
+        logger.info("ExecutionEngine cleanup complete")

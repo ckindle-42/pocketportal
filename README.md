@@ -1,14 +1,14 @@
-# 🚀 PocketPortal 4.5.1 - One-for-All AI Agent Platform
+# 🚀 PocketPortal 4.7.0 - One-for-All AI Agent Platform
 
 **Privacy-First, Interface-Agnostic AI Agent with Professional Architecture and Enterprise Features**
 
 ---
 
-## 🎉 PocketPortal 4.5.1 - Architectural Excellence & Operational Maturity
+## 🎉 PocketPortal 4.7.0 - Production Reliability & Operational Excellence
 
-**PocketPortal 4.5.1** achieves true "One-for-All" status with professional-grade architecture, modular interfaces, stateful execution, and enterprise operational features.
+**PocketPortal 4.7.0** achieves production-grade reliability with watchdog monitoring, automated log rotation, enhanced graceful shutdown, and refined circuit breaker patterns.
 
-### Evolution from 3.x to 4.5.1
+### Evolution from 3.x to 4.7.0
 
 ```
 v3.x:   Telegram Bot → [Monolithic Logic]
@@ -19,9 +19,12 @@ v4.4:   + Async Job Queue + MCP Protocol Mesh + Full Observability Stack
 v4.4.1: + Operational Cleanup + Version SSOT + ToolManifest + DLQ CLI
 v4.5.1: + Modular Interfaces + Lifecycle Management + Approval Protocol
         + Stateful Execution + Cost Tracking + Secret Abstraction
+v4.6.0: + Strict src-layout + Circuit Breaker Pattern
+v4.7.0: + Watchdog Auto-Recovery + Log Rotation + Enhanced Graceful Shutdown
+        + Factory Decoupling + Configurable Circuit Breaker
 ```
 
-**Core Improvements (4.0-4.4):**
+**Core Improvements (4.0-4.7):**
 - ✅ **Modular Architecture**: Add Web/Slack/Discord/API interfaces easily
 - ✅ **Dependency Injection**: Fully testable without loading LLMs
 - ✅ **Structured Errors**: Custom exceptions instead of string returns
@@ -38,6 +41,12 @@ v4.5.1: + Modular Interfaces + Lifecycle Management + Approval Protocol
 - ✅ **Full Observability**: OpenTelemetry tracing, Prometheus metrics, health probes
 - ✅ **Config Hot-Reload**: Zero-downtime configuration updates
 - ✅ **Testing Infrastructure**: Organized test markers (unit, integration, slow)
+- ✅ **Strict src-layout**: Production-ready package structure (v4.6.0)
+- ✅ **Circuit Breaker Pattern**: Backend failure protection with auto-recovery (v4.6.0)
+- ✅ **Factory Decoupling**: Clean dependency injection pattern (v4.6.1)
+- ✅ **Watchdog System**: Auto-recovery of failed components (v4.7.0)
+- ✅ **Log Rotation**: Automated log management with compression (v4.7.0)
+- ✅ **Enhanced Graceful Shutdown**: Priority-based shutdown with timeout handling (v4.7.0)
 
 ### Quick Start
 
@@ -160,8 +169,8 @@ Previous versions of PocketPortal (v3.x) used a monolithic architecture. Migrati
 
 ---
 
-**Version:** 4.5.1
+**Version:** 4.7.0
 **Release Date:** December 2025
 **License:** MIT
 
-**Built with ❤️ for privacy, modularity, extensibility, production-readiness, and architectural excellence**
+**Built with ❤️ for privacy, modularity, extensibility, production-readiness, reliability, and architectural excellence**

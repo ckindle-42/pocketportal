@@ -532,54 +532,27 @@ def create_agent_core(config: Dict[str, Any]) -> AgentCore:
 
     This is the recommended way to instantiate AgentCore.
 
+    v4.6.1: Refactored to use decoupled factory functions from core.factories
+            for better testability and flexibility.
+
     Args:
         config: Configuration dictionary
 
     Returns:
         Initialized AgentCore instance
+
+    Example:
+        >>> config = {
+        ...     'routing_strategy': 'AUTO',
+        ...     'circuit_breaker_enabled': True,
+        ...     'max_context_messages': 50
+        ... }
+        >>> agent = create_agent_core(config)
     """
-    # Import tool registry here to avoid circular dependencies
-    from pocketportal.tools import registry as tool_registry
+    from .factories import create_dependencies
 
-    # Initialize all dependencies
-    model_registry = ModelRegistry()
+    # Create all dependencies using factory
+    deps = create_dependencies(config)
 
-    strategy_name = config.get('routing_strategy', 'AUTO').upper()
-    routing_strategy = getattr(RoutingStrategy, strategy_name, RoutingStrategy.AUTO)
-
-    router = IntelligentRouter(
-        model_registry,
-        strategy=routing_strategy,
-        model_preferences=config.get('model_preferences', {})
-    )
-
-    backend_config = {
-        'ollama_base_url': config.get('ollama_base_url', 'http://localhost:11434'),
-        'lmstudio_base_url': config.get('lmstudio_base_url', 'http://localhost:1234/v1')
-    }
-
-    execution_engine = ExecutionEngine(
-        model_registry,
-        router,
-        backend_config
-    )
-
-    context_manager = ContextManager(
-        max_context_messages=config.get('max_context_messages', 50)
-    )
-
-    event_bus = EventBus()
-
-    prompt_manager = PromptManager()
-
-    # Create and return AgentCore
-    return AgentCore(
-        model_registry=model_registry,
-        router=router,
-        execution_engine=execution_engine,
-        context_manager=context_manager,
-        event_bus=event_bus,
-        prompt_manager=prompt_manager,
-        tool_registry=tool_registry,
-        config=config
-    )
+    # Create and return AgentCore with injected dependencies
+    return AgentCore(**deps.get_all())

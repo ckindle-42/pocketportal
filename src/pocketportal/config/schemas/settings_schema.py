@@ -86,7 +86,7 @@ class SecurityConfig(BaseModel):
 
 
 class LLMConfig(BaseModel):
-    """LLM backend configuration"""
+    """LLM backend configuration (v4.6.2: Enhanced with circuit breaker)"""
 
     ollama_base_url: str = Field(
         default="http://localhost:11434",
@@ -115,9 +115,30 @@ class LLMConfig(BaseModel):
         le=300
     )
 
+    # v4.6.2: Circuit Breaker Configuration
+    circuit_breaker_enabled: bool = Field(
+        default=True,
+        description="Enable circuit breaker pattern for backend failures"
+    )
+    circuit_breaker_threshold: int = Field(
+        default=3,
+        description="Failures before opening circuit",
+        ge=1
+    )
+    circuit_breaker_timeout: int = Field(
+        default=60,
+        description="Seconds before attempting recovery",
+        ge=10
+    )
+    circuit_breaker_half_open_calls: int = Field(
+        default=1,
+        description="Test calls allowed in half-open state",
+        ge=1
+    )
+
 
 class ObservabilityConfig(BaseModel):
-    """Observability and monitoring configuration"""
+    """Observability and monitoring configuration (v4.7.0: Enhanced)"""
 
     # Logging
     log_level: str = Field(
@@ -127,6 +148,51 @@ class ObservabilityConfig(BaseModel):
     log_format: str = Field(
         default="json",
         description="Log format (json or text)"
+    )
+
+    # v4.7.0: Log Rotation
+    log_rotation_enabled: bool = Field(
+        default=True,
+        description="Enable automatic log rotation"
+    )
+    log_max_bytes: int = Field(
+        default=10 * 1024 * 1024,  # 10 MB
+        description="Maximum log file size before rotation (bytes)",
+        ge=1024 * 1024
+    )
+    log_rotation_interval_hours: int = Field(
+        default=24,
+        description="Time-based rotation interval (hours)",
+        ge=1
+    )
+    log_backup_count: int = Field(
+        default=7,
+        description="Number of rotated log files to keep",
+        ge=1
+    )
+    log_compress_rotated: bool = Field(
+        default=True,
+        description="Compress rotated log files"
+    )
+
+    # v4.7.0: Watchdog
+    watchdog_enabled: bool = Field(
+        default=False,
+        description="Enable watchdog monitoring and auto-recovery"
+    )
+    watchdog_check_interval_seconds: int = Field(
+        default=30,
+        description="Watchdog health check interval (seconds)",
+        ge=10
+    )
+    watchdog_max_consecutive_failures: int = Field(
+        default=3,
+        description="Failures before component restart",
+        ge=1
+    )
+    watchdog_restart_on_failure: bool = Field(
+        default=True,
+        description="Automatically restart failed components"
     )
 
     # OpenTelemetry
@@ -236,6 +302,14 @@ class SettingsSchema(BaseModel):
     data_dir: Path = Field(
         default=Path.home() / ".pocketportal",
         description="Data directory for persistent storage"
+    )
+
+    # v4.7.0: Graceful Shutdown Configuration
+    shutdown_timeout_seconds: float = Field(
+        default=30.0,
+        description="Maximum time to wait for graceful shutdown",
+        ge=5.0,
+        le=300.0
     )
 
     class Config:

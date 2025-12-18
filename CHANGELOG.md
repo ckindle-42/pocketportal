@@ -5,6 +5,151 @@ All notable changes to PocketPortal will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.7.0] - 2025-12-18
+
+### Added - Production Reliability & Operational Excellence
+
+- **v4.6.1: Factory Decoupling**
+  - Extracted dependency creation from `create_agent_core()` into `core/factories.py`
+  - New `DependencyContainer` class for managing all AgentCore dependencies
+  - Individual factory functions for each component (router, execution engine, etc.)
+  - Better testability through dependency injection
+  - Easier customization of implementations
+  - Cleaner separation of concerns between creation and usage
+
+- **v4.6.2: Circuit Breaker Refinements**
+  - Made circuit breaker configurable (can now be disabled if needed)
+  - Added `circuit_breaker_enabled` configuration option
+  - Enhanced health check integration with circuit breaker state
+  - Added `get_circuit_breaker_status()` method for detailed status reporting
+  - Safe handling when circuit breaker is disabled
+  - Added `cleanup()` method to ExecutionEngine for graceful shutdown
+  - Better logging of circuit state changes and failures
+  - Configuration options:
+    - `circuit_breaker_enabled`: Enable/disable circuit breaker (default: True)
+    - `circuit_breaker_threshold`: Failures before opening (default: 3)
+    - `circuit_breaker_timeout`: Recovery timeout in seconds (default: 60)
+    - `circuit_breaker_half_open_calls`: Test calls in half-open state (default: 1)
+
+- **v4.7.0: Watchdog System** (`observability/watchdog.py`)
+  - Process monitoring and auto-recovery system
+  - Monitors critical components (workers, interfaces, event broker)
+  - Automatic component restart on failure
+  - Configurable failure thresholds and restart policies
+  - Exponential backoff for restart attempts
+  - Resource monitoring (memory, CPU usage)
+  - Integration with health check system
+  - Component states: HEALTHY, DEGRADED, FAILED, RESTARTING, STOPPED
+  - Manual component restart and reset capabilities
+  - Configuration options:
+    - `watchdog_enabled`: Enable watchdog monitoring (default: False)
+    - `watchdog_check_interval_seconds`: Health check interval (default: 30)
+    - `watchdog_max_consecutive_failures`: Failures before restart (default: 3)
+    - `watchdog_restart_on_failure`: Auto-restart on failure (default: True)
+
+- **v4.7.0: Log Rotation** (`observability/log_rotation.py`)
+  - Automated log file rotation with multiple strategies
+  - Size-based rotation (default: 10MB per file)
+  - Time-based rotation (default: daily)
+  - Automatic compression of rotated logs (gzip)
+  - Cleanup of old rotated files
+  - Async operation for non-blocking I/O
+  - Integration with Python's logging system via `RotatingStructuredLogHandler`
+  - Configuration options:
+    - `log_rotation_enabled`: Enable log rotation (default: True)
+    - `log_max_bytes`: Max size before rotation (default: 10MB)
+    - `log_rotation_interval_hours`: Time-based rotation (default: 24h)
+    - `log_backup_count`: Number of backups to keep (default: 7)
+    - `log_compress_rotated`: Compress old logs (default: True)
+
+- **v4.7.0: Enhanced Graceful Shutdown** (updated `lifecycle.py`)
+  - Priority-based shutdown sequence
+  - Timeout handling for all shutdown operations
+  - Task draining (wait for in-flight operations)
+  - Stop accepting new work before shutdown
+  - Six-phase shutdown process:
+    1. Stop accepting new work
+    2. Drain in-flight operations
+    3. Stop optional components (watchdog, log rotation)
+    4. Run priority-ordered shutdown callbacks
+    5. Cleanup agent core
+    6. Clear event history
+  - Per-callback timeout configuration
+  - Shutdown priority levels: CRITICAL, HIGH, NORMAL, LOW, LOWEST
+  - Active task tracking and monitoring
+  - Shutdown duration logging and validation
+  - Configuration: `shutdown_timeout_seconds` (default: 30s)
+
+### Changed - Enhanced Configuration & Lifecycle
+
+- **v4.6.1: Simplified create_agent_core()**
+  - Reduced from ~50 lines to ~10 lines
+  - Now delegates to factory functions for clarity
+  - Maintains backward compatibility
+  - Example usage documented in docstring
+
+- **v4.6.2: ExecutionEngine Enhancements**
+  - Circuit breaker now optional (configurable)
+  - Better error handling when circuit breaker is disabled
+  - Added comprehensive logging of initialization parameters
+  - Fixed settings initialization order
+
+- **v4.7.0: RuntimeContext Enhancements**
+  - Added `watchdog` and `log_rotator` fields
+  - New `active_tasks` set for tracking in-flight operations
+  - New `accepting_work` flag for shutdown coordination
+  - Changed `shutdown_callbacks` from List[Callable] to List[ShutdownCallback]
+
+- **v4.7.0: Runtime Class Enhancements**
+  - Added `enable_watchdog` and `enable_log_rotation` parameters
+  - Added `shutdown_timeout` parameter for configurable grace period
+  - New methods:
+    - `track_task()`: Track tasks for graceful draining
+    - `is_accepting_work()`: Check if system is shutting down
+    - `_drain_active_tasks()`: Wait for active tasks to complete
+  - Enhanced `register_shutdown_callback()` with priority and timeout
+
+### Configuration Schema Updates
+
+- **LLMConfig** (v4.6.2):
+  - Added circuit breaker configuration fields
+  - All circuit breaker settings with validation
+
+- **ObservabilityConfig** (v4.7.0):
+  - Added log rotation configuration fields
+  - Added watchdog configuration fields
+  - Comprehensive validation for all new settings
+
+- **SettingsSchema** (v4.7.0):
+  - Added `shutdown_timeout_seconds` field
+
+### Technical Improvements
+
+- **Dependency Injection**: Factory pattern for better testability (v4.6.1)
+- **Resilience**: Optional circuit breaker with configurable behavior (v4.6.2)
+- **Monitoring**: Watchdog system for automatic recovery (v4.7.0)
+- **Log Management**: Automated rotation and cleanup (v4.7.0)
+- **Graceful Degradation**: Enhanced shutdown with timeouts and draining (v4.7.0)
+- **Production Ready**: All features designed for long-running deployments
+
+### Migration Notes
+
+- **v4.6.1 - Non-Breaking**: Factory functions are internal, `create_agent_core()` API unchanged
+- **v4.6.2 - Non-Breaking**: Circuit breaker enabled by default, can be disabled via config
+- **v4.7.0 - Non-Breaking**: All new features are opt-in via configuration
+  - Watchdog: Disabled by default, enable with `watchdog_enabled=True`
+  - Log Rotation: Enabled by default, disable with `log_rotation_enabled=False`
+  - Enhanced Shutdown: Works automatically, configure timeout if needed
+
+### Performance Impact
+
+- **v4.6.1**: Minimal (factory overhead is one-time during initialization)
+- **v4.6.2**: None when circuit breaker is enabled (already present in v4.6.0)
+- **v4.7.0**:
+  - Watchdog: Minimal (runs async every 30s by default)
+  - Log Rotation: Minimal (async background task)
+  - Enhanced Shutdown: None during normal operation, better cleanup on exit
+
 ## [4.6.0] - 2025-12-18
 
 ### Added - Import Safety & Reliability
