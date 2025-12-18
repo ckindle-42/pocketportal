@@ -102,8 +102,8 @@ class ToolRegistry:
         loaded = 0
         failed = 0
 
-        # Import base_tool to get BaseTool class for isinstance check
-        from .base_tool import BaseTool
+        # Import BaseTool from new location (core interfaces)
+        from pocketportal.core.interfaces.tool import BaseTool
 
         # Walk through all packages in the tools directory
         for importer, modname, ispkg in pkgutil.walk_packages(
@@ -233,7 +233,7 @@ class ToolRegistry:
             logger.info(f"Found {len(plugin_entry_points)} plugin tool(s) via entry_points")
 
             # Load each plugin tool
-            from .base_tool import BaseTool
+            from pocketportal.core.interfaces.tool import BaseTool
 
             for entry_point in plugin_entry_points:
                 try:

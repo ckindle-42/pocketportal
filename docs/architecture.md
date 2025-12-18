@@ -1,13 +1,10 @@
-# PocketPortal v4.3.0 - Architecture Documentation
+# PocketPortal - Architecture Reference
 
 ## Overview
 
-PocketPortal 4.3 represents a significant architectural evolution toward a true "one-for-all" AI agent platform. This document consolidates all architectural decisions, design patterns, and implementation details.
+PocketPortal represents a significant architectural evolution toward a true "one-for-all" AI agent platform. This document consolidates all architectural decisions, design patterns, and implementation details.
 
-**Version History:**
-- v4.3.0 (Current): Plugin architecture, async queues, MCP elevation, observability
-- v4.2.0: DAO pattern, dynamic tool discovery, lazy loading
-- v4.1.0: Self-contained package, interface segregation
+**Note:** For version-specific changes and release history, see [CHANGELOG.md](../CHANGELOG.md) in the root directory.
 
 ---
 

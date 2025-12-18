@@ -5,6 +5,97 @@ All notable changes to PocketPortal will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.5.1] - 2025-12-18
+
+### Changed - Documentation & Version Integrity
+- **Architecture Documentation**: Made `docs/architecture.md` version-agnostic by removing specific version numbers from headers
+  - Renamed from "PocketPortal v4.3.0" to "PocketPortal - Architecture Reference"
+  - Added reference to CHANGELOG.md as the single source of version history
+  - Reduces documentation maintenance debt and prevents version drift
+
+- **README Cleanup**: Moved "What's New" sections to CHANGELOG.md
+  - Removed version-specific feature lists from README
+  - README now focuses on current state, not historical changes
+  - CHANGELOG.md is now the primary source for release notes
+
+- **Root Directory Hygiene**: Removed redundant `__init__.py` from repository root
+  - Prevents import confusion between project root and package directory
+
+### Changed - Project Structure & Packaging
+- **Tool Interface Refactoring**: Moved `BaseTool` to core contracts
+  - Moved `pocketportal/tools/base_tool.py` → `pocketportal/core/interfaces/tool.py`
+  - BaseTool is a core contract, not a tool itself
+  - Prevents circular imports when Core needs to type-check tools
+  - Created new `pocketportal/core/interfaces/` package for core contracts
+
+- **Registry Organization**: Moved `ToolManifest` to core registries
+  - Moved `pocketportal/tools/manifest.py` → `pocketportal/core/registries/manifest.py`
+  - Created new `pocketportal/core/registries/` package for registration schemas
+  - Better separation of concerns: tools vs. tool registration
+
+- **Test Organization**: Moved verification scripts to E2E tests
+  - Moved `scripts/verification/*.py` → `tests/e2e/`
+  - Added `tests/e2e/README.md` with E2E testing guidelines
+  - Formalizes manual verification scripts as automated E2E tests
+
+- **Import Updates**: Updated all 35+ tool files to use new import paths
+  - All tools now import from `pocketportal.core.interfaces.tool`
+  - All manifests now import from `pocketportal.core.registries.manifest`
+
+### Changed - Core Stability & Error Handling
+- **EventBus Memory Management**: Made event history opt-in to prevent memory leaks
+  - Changed `EventBus.__init__(enable_history: bool = False, max_history: int = 1000)`
+  - Event history now **disabled by default** for long-running agents
+  - For production auditing, users should use the persistence layer instead
+  - Prevents memory leaks from accumulating events in RAM over weeks/months
+
+- **Structured Error Codes**: Added numeric error codes to all exceptions
+  - New `ErrorCode` enum with categorized codes:
+    - 1xxx: Client errors (validation, parameters)
+    - 2xxx: Security errors (auth, rate limiting)
+    - 3xxx: Resource errors (model unavailable, quota)
+    - 4xxx: Execution errors (tool execution, processing)
+    - 5xxx: System errors (internal, database)
+  - All exception subclasses now use error codes
+  - Added `PocketPortalError.user_message()` for user-friendly error messages
+  - Enables interfaces to show contextual messages (e.g., "Error 503: Model Busy")
+
+### Technical Improvements
+- Reduced cognitive load by consolidating documentation
+- Improved package hygiene and import paths
+- Enhanced error handling for better user experience
+- Prevented memory leaks in long-running deployments
+- Strengthened architectural boundaries (core vs. tools)
+
+### Migration Notes
+- **Breaking Change**: Code importing `BaseTool` must update import path:
+  ```python
+  # Old
+  from pocketportal.tools.base_tool import BaseTool
+
+  # New
+  from pocketportal.core.interfaces.tool import BaseTool
+  ```
+- **Breaking Change**: Code importing `ToolManifest` must update import path:
+  ```python
+  # Old
+  from pocketportal.tools.manifest import ToolManifest
+
+  # New
+  from pocketportal.core.registries.manifest import ToolManifest
+  ```
+- **Breaking Change**: `EventBus` now requires explicit `enable_history=True` to store event history
+  ```python
+  # Old (history enabled by default)
+  event_bus = EventBus()
+
+  # New (history disabled by default)
+  event_bus = EventBus(enable_history=True)  # Only if you need history
+  ```
+- **Non-Breaking**: All exception constructors remain backward compatible
+  - Error codes are automatically assigned
+  - Existing code continues to work without modification
+
 ## [4.5.0] - 2025-12-18
 
 ### Added - Project Structure & Hygiene
