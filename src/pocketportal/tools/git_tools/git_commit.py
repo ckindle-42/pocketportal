@@ -7,7 +7,7 @@ import logging
 from typing import Dict, Any
 from pathlib import Path
 
-from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
 
 logger = logging.getLogger(__name__)
 
@@ -25,30 +25,34 @@ class GitCommitTool(BaseTool):
         return ToolMetadata(
             name="git_commit",
             description="Commit staged changes to Git repository",
-            category=ToolCategory.DEVELOPMENT,
+            category=ToolCategory.DEV,
             requires_confirmation=True,  # Commits modify history
-            parameters={
-                "repo_path": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Path to repository (default: current directory)"
-                },
-                "message": {
-                    "type": "string",
-                    "required": True,
-                    "description": "Commit message"
-                },
-                "add_all": {
-                    "type": "boolean",
-                    "required": False,
-                    "description": "Add all modified files before committing (default: False)"
-                },
-                "files": {
-                    "type": "list",
-                    "required": False,
-                    "description": "Specific files to add before committing"
-                }
-            }
+            parameters=[
+                ToolParameter(
+                    name="repo_path",
+                    param_type="string",
+                    description="Path to repository (default: current directory)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="message",
+                    param_type="string",
+                    description="Commit message",
+                    required=True
+                ),
+                ToolParameter(
+                    name="add_all",
+                    param_type="bool",
+                    description="Add all modified files before committing (default: False)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="files",
+                    param_type="list",
+                    description="Specific files to add before committing",
+                    required=False
+                )
+            ]
         )
 
     async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:

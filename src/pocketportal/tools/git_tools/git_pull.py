@@ -7,7 +7,7 @@ import logging
 from typing import Dict, Any
 from pathlib import Path
 
-from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
 
 logger = logging.getLogger(__name__)
 
@@ -25,30 +25,34 @@ class GitPullTool(BaseTool):
         return ToolMetadata(
             name="git_pull",
             description="Pull and merge changes from remote Git repository",
-            category=ToolCategory.DEVELOPMENT,
+            category=ToolCategory.DEV,
             requires_confirmation=True,  # Pull can modify working tree
-            parameters={
-                "repo_path": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Path to repository (default: current directory)"
-                },
-                "remote": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Remote name (default: origin)"
-                },
-                "branch": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Branch to pull (default: current branch)"
-                },
-                "rebase": {
-                    "type": "boolean",
-                    "required": False,
-                    "description": "Rebase instead of merge (default: False)"
-                }
-            }
+            parameters=[
+                ToolParameter(
+                    name="repo_path",
+                    param_type="string",
+                    description="Path to repository (default: current directory)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="remote",
+                    param_type="string",
+                    description="Remote name (default: origin)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="branch",
+                    param_type="string",
+                    description="Branch to pull (default: current branch)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="rebase",
+                    param_type="bool",
+                    description="Rebase instead of merge (default: False)",
+                    required=False
+                )
+            ]
         )
 
     async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:

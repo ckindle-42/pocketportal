@@ -8,7 +8,7 @@ from typing import Dict, Any
 from pathlib import Path
 import os
 
-from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
 
 logger = logging.getLogger(__name__)
 
@@ -20,40 +20,46 @@ class DockerComposeTool(BaseTool):
         return ToolMetadata(
             name="docker_compose",
             description="Run Docker Compose commands (up, down, ps, logs)",
-            category=ToolCategory.SYSTEM,
+            category=ToolCategory.DEV,
             requires_confirmation=True,  # Compose affects multiple containers
-            parameters={
-                "action": {
-                    "type": "string",
-                    "required": True,
-                    "description": "Action: up, down, ps, logs, restart"
-                },
-                "compose_file": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Path to docker-compose.yml (default: ./docker-compose.yml)"
-                },
-                "project_name": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Project name (default: directory name)"
-                },
-                "services": {
-                    "type": "list",
-                    "required": False,
-                    "description": "Specific services to target"
-                },
-                "detach": {
-                    "type": "boolean",
-                    "required": False,
-                    "description": "Run in background (for 'up', default: True)"
-                },
-                "build": {
-                    "type": "boolean",
-                    "required": False,
-                    "description": "Build images before starting (for 'up', default: False)"
-                }
-            }
+            parameters=[
+                ToolParameter(
+                    name="action",
+                    param_type="string",
+                    description="Action: up, down, ps, logs, restart",
+                    required=True
+                ),
+                ToolParameter(
+                    name="compose_file",
+                    param_type="string",
+                    description="Path to docker-compose.yml (default: ./docker-compose.yml)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="project_name",
+                    param_type="string",
+                    description="Project name (default: directory name)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="services",
+                    param_type="list",
+                    description="Specific services to target",
+                    required=False
+                ),
+                ToolParameter(
+                    name="detach",
+                    param_type="bool",
+                    description="Run in background (for 'up', default: True)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="build",
+                    param_type="bool",
+                    description="Build images before starting (for 'up', default: False)",
+                    required=False
+                )
+            ]
         )
 
     async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:

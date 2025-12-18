@@ -133,7 +133,6 @@ curl http://localhost:8000/health  # Requires web interface running
 ### Documentation
 
 📖 **Architecture Guide**: [`docs/architecture.md`](docs/architecture.md)
-🔄 **Migration from 3.x**: [`docs/archive/MIGRATION_TO_4.0.md`](docs/archive/MIGRATION_TO_4.0.md)
 🔧 **Installation Guide**: [`docs/setup.md`](docs/setup.md)
 🔒 **Security Enhancements**: [`docs/security/SECURITY_FIXES.md`](docs/security/SECURITY_FIXES.md)
 
@@ -418,9 +417,7 @@ Plugins should:
 
 ## 📚 Legacy v3.x
 
-Previous versions of PocketPortal (v3.x) used a monolithic architecture. Migration documentation has been moved to the `docs/archive/` directory for reference.
-
-**To migrate to 4.x**: See [`docs/archive/MIGRATION_TO_4.0.md`](docs/archive/MIGRATION_TO_4.0.md)
+Previous versions of PocketPortal (v3.x) used a monolithic architecture. Version 4.x represents a complete architectural redesign with modular, interface-agnostic components. See the [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
 ---
 

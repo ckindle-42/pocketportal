@@ -330,14 +330,9 @@ pocketportal validate-config
 
 ```bash
 # Run comprehensive health check
-pocketportal health
+pocketportal verify
 
-# Expected output:
-# ✅ LLM Backend: Connected (Ollama)
-# ✅ Telegram API: Reachable
-# ✅ Database: Initialized
-# ✅ Tools: 25 tools loaded
-# ✅ System: Ready
+# Expected output shows system status and validation results
 ```
 
 ### List Available Tools
@@ -351,12 +346,7 @@ pocketportal list-tools
 
 ### Test LLM Connection
 
-```bash
-# Test LLM backend connectivity
-pocketportal test-llm
-
-# Should show successful connection and model response
-```
+You can verify LLM connectivity by running the agent and sending a test message through the configured interface (Telegram or Web).
 
 ---
 
@@ -398,18 +388,22 @@ pocketportal start --all
 # Starts Telegram, Web, and any other enabled interfaces
 ```
 
-### Background Mode (Daemon)
+### Background Mode
+
+To run PocketPortal in the background, use standard Unix tools:
 
 ```bash
-# Start in background
-pocketportal start --daemon
+# Start in background using nohup
+nohup pocketportal start --interface telegram > pocketportal.log 2>&1 &
 
-# Check status
-pocketportal status
+# Check if running
+ps aux | grep pocketportal
 
-# Stop daemon
-pocketportal stop
+# Stop
+pkill -f pocketportal
 ```
+
+For production deployments, see the [Production Deployment](#production-deployment) section for systemd/launchd service configuration.
 
 ---
 
@@ -540,9 +534,9 @@ pip install -e .
 
 ```bash
 # Stop all PocketPortal instances
-pocketportal stop
+pkill -f pocketportal
 
-# Remove lock file
+# Remove lock files
 rm ~/.local/share/pocketportal/*.db-wal
 rm ~/.local/share/pocketportal/*.db-shm
 
@@ -746,17 +740,17 @@ docker logs -f pocketportal
 ### Monitoring
 
 ```bash
-# View live logs
-pocketportal logs --follow
-
 # View queue status
 pocketportal queue stats
 
-# Check health
-pocketportal health
+# View system verification
+pocketportal verify
 
 # View metrics (if observability enabled)
 curl http://localhost:8000/metrics
+
+# Monitor logs (if running in background with nohup)
+tail -f pocketportal.log
 ```
 
 ### Upgrading
@@ -771,9 +765,9 @@ pip install -e ".[all]" --upgrade
 # Verify version
 pocketportal --version
 
-# Restart
-pocketportal stop
-pocketportal start --interface telegram
+# Restart (if running in background)
+pkill -f pocketportal
+nohup pocketportal start --interface telegram > pocketportal.log 2>&1 &
 ```
 
 ---

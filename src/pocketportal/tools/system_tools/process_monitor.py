@@ -7,7 +7,7 @@ import logging
 from typing import Dict, Any
 from pathlib import Path
 
-from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
 
 logger = logging.getLogger(__name__)
 
@@ -25,35 +25,40 @@ class ProcessMonitorTool(BaseTool):
         return ToolMetadata(
             name="process_monitor",
             description="Monitor and manage system processes",
-            category=ToolCategory.SYSTEM,
+            category=ToolCategory.UTILITY,
             requires_confirmation=False,
-            parameters={
-                "action": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Action: list, search, info, kill (default: list)"
-                },
-                "query": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Search query for process name (for search action)"
-                },
-                "pid": {
-                    "type": "integer",
-                    "required": False,
-                    "description": "Process ID (for info/kill actions)"
-                },
-                "sort_by": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Sort by: cpu, memory, name (default: cpu)"
-                },
-                "limit": {
-                    "type": "integer",
-                    "required": False,
-                    "description": "Limit number of results (default: 10)"
-                }
-            }
+            parameters=[
+                ToolParameter(
+                    name="action",
+                    param_type="string",
+                    description="Action: list, search, info, kill (default: list)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="query",
+                    param_type="string",
+                    description="Search query for process name (for search action)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="pid",
+                    param_type="int",
+                    description="Process ID (for info/kill actions)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="sort_by",
+                    param_type="string",
+                    description="Sort by: cpu, memory, name (default: cpu)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="limit",
+                    param_type="int",
+                    description="Limit number of results (default: 10)",
+                    required=False
+                )
+            ]
         )
 
     async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
