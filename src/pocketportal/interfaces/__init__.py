@@ -7,7 +7,7 @@ Modularized interface packages for better organization:
 - web/: FastAPI + WebSocket web interface
 """
 
-from .base import BaseInterface, InterfaceManager, Message, Response
+from pocketportal.core.interfaces.agent_interface import BaseInterface, InterfaceManager, Message, Response
 from .telegram import TelegramInterface, TelegramRenderer
 from .web import WebInterface
 
