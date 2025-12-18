@@ -12,10 +12,20 @@ from .tool import (
     ToolParameter,
     ToolCategory,
 )
+from .agent_interface import (
+    BaseInterface,
+    InterfaceManager,
+    Message,
+    Response,
+)
 
 __all__ = [
     'BaseTool',
     'ToolMetadata',
     'ToolParameter',
     'ToolCategory',
+    'BaseInterface',
+    'InterfaceManager',
+    'Message',
+    'Response',
 ]

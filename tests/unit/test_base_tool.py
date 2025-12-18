@@ -4,7 +4,7 @@ Tests for base tool framework
 
 import pytest
 
-from pocketportal.tools.base_tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
 
 
 class MockTool(BaseTool):

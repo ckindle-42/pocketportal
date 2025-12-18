@@ -5,6 +5,43 @@ All notable changes to PocketPortal will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.7.3] - 2025-12-18
+
+### Changed - Technical Debt Cleanup & Import Path Consolidation
+
+- **Removed Ghost Files**: Eliminated legacy duplicate files from previous refactor
+  - Deleted `src/pocketportal/tools/base_tool.py` (duplicate of `core/interfaces/tool.py`)
+  - Deleted `src/pocketportal/tools/manifest.py` (duplicate of `core/registries/manifest.py`)
+  - These files were documented as moved in v4.5.1 but were not actually removed
+  - Prevents import confusion and enforces correct import paths
+
+- **Interface Base Class Consolidation**
+  - Moved `src/pocketportal/interfaces/base.py` → `src/pocketportal/core/interfaces/agent_interface.py`
+  - All interface contracts now centralized in `core/interfaces/` module
+  - Consistent with architectural principle: `core/interfaces/` contains all contracts and protocols
+  - `interfaces/` directory now contains only concrete implementations (Telegram, Web)
+
+- **Import Path Updates**
+  - Updated `tests/unit/test_base_tool.py` to import from `pocketportal.core.interfaces.tool`
+  - Updated `src/pocketportal/interfaces/__init__.py` to reference new agent_interface location
+  - Updated `src/pocketportal/core/interfaces/__init__.py` to export agent interface classes
+  - All imports now follow the standardized architecture
+
+### Technical Benefits
+
+- **Eliminated Import Ambiguity**: Developers can no longer accidentally import deprecated files
+- **Enforced Clean Architecture**: All interfaces and contracts are now in `core/interfaces/`
+- **Improved Developer Experience**: Clear separation between contracts (`core/`) and implementations (`interfaces/`, `tools/`)
+- **Reduced Technical Debt**: Codebase now matches the documented architecture from v4.5.1
+
+### Migration Notes
+
+- **Breaking**: If external code imports from old paths, update imports:
+  - `pocketportal.tools.base_tool` → `pocketportal.core.interfaces.tool`
+  - `pocketportal.tools.manifest` → `pocketportal.core.registries.manifest`
+  - `pocketportal.interfaces.base` → `pocketportal.core.interfaces.agent_interface`
+- **Recommended**: Run `grep -r "from pocketportal.tools" .` to find any remaining references
+
 ## [4.7.2] - 2025-12-18
 
 ### Changed - Project Hygiene & Documentation Consolidation
