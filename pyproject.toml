@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pocketportal"
-version = "4.6.0"
+version = "4.7.0"
 description = "One-for-all AI agent platform with modular architecture, stateful execution, lifecycle management, and enterprise features"
 readme = "README.md"
 license = {text = "MIT"}
