@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pocketportal"
-version = "4.5.1"
+version = "4.6.0"
 description = "One-for-all AI agent platform with modular architecture, stateful execution, lifecycle management, and enterprise features"
 readme = "README.md"
 license = {text = "MIT"}
@@ -158,6 +158,7 @@ Issues = "https://github.com/ckindle-42/pocketportal/issues"
 pocketportal = "pocketportal.cli:main"
 
 [tool.setuptools]
+package-dir = {"" = "src"}
 packages = ["pocketportal"]
 
 [tool.setuptools.package-data]

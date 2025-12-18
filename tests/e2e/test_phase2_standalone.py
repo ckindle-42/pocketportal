@@ -6,11 +6,6 @@ Tests the job queue without full package imports.
 """
 
 import asyncio
-import sys
-from pathlib import Path
-
-# Add to path
-sys.path.insert(0, str(Path(__file__).parent))
 
 from pocketportal.persistence.repositories import Job, JobStatus, JobPriority
 from pocketportal.persistence.inmemory_impl import InMemoryJobRepository

@@ -3,12 +3,8 @@ Tests for base tool framework
 """
 
 import pytest
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from telegram_agent_tools.base_tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
+from pocketportal.tools.base_tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
 
 
 class MockTool(BaseTool):

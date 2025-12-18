@@ -6,11 +6,7 @@ Tests the MCP protocol elevation and universal resource resolver.
 """
 
 import asyncio
-import sys
 from pathlib import Path
-
-# Add to path
-sys.path.insert(0, str(Path(__file__).parent))
 
 from pocketportal.protocols.resource_resolver import (
     UniversalResourceResolver,
