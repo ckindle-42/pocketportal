@@ -19,12 +19,10 @@ import logging
 import subprocess
 from typing import Dict, Any, List, Optional
 from pathlib import Path
-import sys
 import tempfile
 import json
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from base_tool import BaseTool, ToolMetadata, ToolParameter, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolParameter, ToolCategory
 
 logger = logging.getLogger(__name__)
 

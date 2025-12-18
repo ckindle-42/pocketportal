@@ -8,8 +8,7 @@ Modularized interface packages for better organization:
 """
 
 from pocketportal.core.interfaces.agent_interface import BaseInterface, InterfaceManager, Message, Response
-from .telegram import TelegramInterface, TelegramRenderer
-from .web import WebInterface
+from .telegram import TelegramInterface
 
 __all__ = [
     'BaseInterface',
@@ -17,6 +16,4 @@ __all__ = [
     'Message',
     'Response',
     'TelegramInterface',
-    'TelegramRenderer',
-    'WebInterface',
 ]
