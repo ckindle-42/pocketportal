@@ -5,6 +5,50 @@ All notable changes to PocketPortal will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.7.2] - 2025-12-18
+
+### Changed - Project Hygiene & Documentation Consolidation
+
+- **Version Drift Fix**: Established `pyproject.toml` as Single Source of Truth (SSOT)
+  - Fixed version inconsistency: `pyproject.toml` (4.7.1) vs `README.md` (4.7.0)
+  - Removed hardcoded version numbers from `README.md` header and footer
+  - README now focuses on current capabilities rather than version-specific changes
+  - Version history now exclusively maintained in CHANGELOG.md
+
+- **Test Suite Cleanup**: Renamed test files for better self-documentation
+  - `tests/e2e/test_phase2_standalone.py` → `tests/e2e/test_job_queue_system.py`
+  - `tests/e2e/test_phase3_standalone.py` → `tests/e2e/test_mcp_protocol.py`
+  - `tests/e2e/test_phase4_standalone.py` → `tests/e2e/test_observability.py`
+  - Test filenames now reflect functionality instead of development phases
+  - Improved developer onboarding experience
+
+- **Documentation Organization**: Archived one-time reports
+  - Created `docs/archive/reports/` directory for historical artifacts
+  - Moved `docs/reports/VERIFICATION_REPORT.md` → `docs/archive/reports/VERIFICATION_REPORT.md`
+  - Active `docs/` directory now contains only living documentation
+  - Reduced cognitive load for new contributors
+
+- **Configuration Documentation**: Enhanced setup guide
+  - Added explicit **Configuration Precedence Hierarchy** to `docs/setup.md`:
+    1. Environment Variables (highest priority)
+    2. Configuration File (`config.yaml`)
+    3. Default Values (lowest priority)
+  - Clarified distinction between quick start (README) and production setup (setup.md)
+  - Documented recommended dependency groups for production vs development
+
+### Technical Improvements
+
+- Enforced strict version integrity protocol
+- Eliminated "process debt" from test naming conventions
+- Improved documentation discoverability
+- Reduced risk of configuration confusion in production deployments
+
+### Migration Notes
+
+- **Non-Breaking**: No API changes, purely organizational improvements
+- **Action Required**: Update any scripts referencing old test file names
+- **Recommendation**: Review `docs/setup.md` for updated configuration guidance
+
 ## [4.7.0] - 2025-12-18
 
 ### Added - Production Reliability & Operational Excellence
