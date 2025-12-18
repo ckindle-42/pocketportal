@@ -16,12 +16,6 @@ import pytest
 from datetime import datetime
 from typing import Any
 
-import sys
-from pathlib import Path
-
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from pocketportal.persistence.repositories import Job, JobStatus, JobPriority
 from pocketportal.persistence.inmemory_impl import InMemoryJobRepository
 from pocketportal.core.job_worker import JobHandler, JobRegistry, JobWorker, JobWorkerPool

@@ -3,13 +3,9 @@ Tests for intelligent router
 """
 
 import pytest
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from routing.task_classifier import TaskClassifier
-from routing.intelligent_router import IntelligentRouter
+from pocketportal.routing.task_classifier import TaskClassifier
+from pocketportal.routing.intelligent_router import IntelligentRouter
 
 
 class TestTaskClassifier:
@@ -64,17 +60,17 @@ class TestIntelligentRouter:
     
     def test_router_initialization(self):
         """Test router initializes with registry"""
-        from routing.model_registry import ModelRegistry
-        
+        from pocketportal.routing.model_registry import ModelRegistry
+
         registry = ModelRegistry()
         router = IntelligentRouter(registry)
-        
+
         assert router.registry is not None
         assert router.classifier is not None
-    
+
     def test_route_selection(self):
         """Test that router selects appropriate models"""
-        from routing.model_registry import ModelRegistry
+        from pocketportal.routing.model_registry import ModelRegistry
         
         registry = ModelRegistry()
         router = IntelligentRouter(registry)

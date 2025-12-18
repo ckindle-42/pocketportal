@@ -5,6 +5,66 @@ All notable changes to PocketPortal will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.6.0] - 2025-12-18
+
+### Added - Import Safety & Reliability
+
+- **Strict src-layout**: Migrated to `src/pocketportal/` layout following Python packaging best practices
+  - Prevents accidental imports from source tree during development
+  - Forces proper package installation for all imports
+  - Catches import errors early in development cycle
+  - Aligns with Python Packaging Authority recommendations
+  - Updated `pyproject.toml` with `package-dir = {"" = "src"}`
+
+- **Circuit Breaker Pattern**: Fully implemented in ExecutionEngine for backend resilience
+  - Three states: CLOSED (normal), OPEN (failing), HALF_OPEN (testing recovery)
+  - Configurable failure threshold (default: 3 failures)
+  - Automatic recovery testing after timeout (default: 60 seconds)
+  - Per-backend state tracking (Ollama, LMStudio, MLX independently managed)
+  - Health check integration showing circuit state and failure counts
+  - Manual circuit reset capability via `reset_circuit_breaker(backend_name)`
+  - Prevents wasted resources on repeatedly failing backends
+  - Improves response times by failing fast when backends are down
+
+### Changed - Package Structure
+
+- **Source Layout Migration**: All package code moved to `src/pocketportal/`
+  - Previous: `/pocketportal/` (flat layout)
+  - Current: `/src/pocketportal/` (src-layout)
+  - Tests remain at `/tests/` (outside src)
+  - Better isolation between source and tests
+
+- **Test Import Cleanup**: Removed all `sys.path.insert()` hacks from test files
+  - All tests now use proper `from pocketportal` imports
+  - Tests properly validate installed package, not source tree
+  - Cleaner test code without path manipulation
+
+### Technical Improvements
+
+- Enhanced package hygiene with strict src-layout
+- Improved reliability with circuit breaker pattern
+- Better failure handling in ExecutionEngine
+- Faster failure detection for unavailable backends
+- Cleaner test architecture
+
+### Migration Notes
+
+- **Breaking Change**: Package must now be installed to import
+  ```bash
+  # Development installation required
+  pip install -e .
+  ```
+- **Non-Breaking**: All public APIs remain unchanged
+- **Non-Breaking**: Import paths unchanged (still `from pocketportal...`)
+- **Non-Breaking**: Circuit breaker is opt-in via configuration:
+  ```python
+  config = {
+      'circuit_breaker_threshold': 3,      # Failures before opening
+      'circuit_breaker_timeout': 60,       # Seconds before retry
+      'circuit_breaker_half_open_calls': 1 # Test calls in half-open
+  }
+  ```
+
 ## [4.5.1] - 2025-12-18
 
 ### Changed - Documentation & Version Integrity

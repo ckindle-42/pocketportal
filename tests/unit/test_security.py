@@ -3,12 +3,8 @@ Tests for security module
 """
 
 import pytest
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from security.security_module import SecurityModule
+from pocketportal.security.security_module import SecurityModule
 
 
 class TestSecurityModule:

@@ -6,13 +6,9 @@ Tests the observability features.
 """
 
 import asyncio
-import sys
 from pathlib import Path
 import tempfile
 import json
-
-# Add to path
-sys.path.insert(0, str(Path(__file__).parent))
 
 from pocketportal.observability.health import (
     HealthCheckSystem,
