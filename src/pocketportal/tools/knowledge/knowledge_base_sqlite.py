@@ -26,10 +26,8 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
 import pickle
-import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from base_tool import BaseTool, ToolMetadata, ToolParameter, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolParameter, ToolCategory
 
 logger = logging.getLogger(__name__)
 
