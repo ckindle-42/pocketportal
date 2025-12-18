@@ -1,397 +1,745 @@
-# Quick Installation Guide - PocketPortal 4.1
+# PocketPortal 4.7.0 - Installation & Setup Guide
 
-**Deploy in 30 minutes** - Complete privacy-first AI agent
+**Production-Grade AI Agent Platform - Complete Setup in 30 Minutes**
 
 ---
 
-## ☑️ Prerequisites Check
+## Table of Contents
 
-Before starting, verify:
+1. [Prerequisites](#prerequisites)
+2. [Quick Installation](#quick-installation)
+3. [Configuration](#configuration)
+4. [Verification](#verification)
+5. [Running PocketPortal](#running-pocketportal)
+6. [Optional Features](#optional-features)
+7. [Troubleshooting](#troubleshooting)
+8. [Production Deployment](#production-deployment)
+
+---
+
+## Prerequisites
+
+### System Requirements
+
+**Minimum:**
+- Python 3.11 or 3.12
+- 8GB RAM (16GB recommended)
+- 20GB free disk space (50GB+ recommended for models)
+- Linux, macOS, or Windows with WSL2
+
+**Recommended for Production:**
+- Python 3.12
+- 32GB RAM (64GB+ for multiple models)
+- 100GB+ free disk space
+- Ubuntu 22.04 LTS or macOS 14+
+
+### Check Your System
 
 ```bash
-# 1. Python version
+# Verify Python version
 python3 --version
-# Required: 3.11.x or 3.12.x
+# Output should be: Python 3.11.x or Python 3.12.x
 
-# 2. Disk space
+# Check available disk space
 df -h ~
-# Required: 50GB+ free
+# Should show at least 20GB free
 
-# 3. Memory
-sysctl hw.memsize  # macOS
-# or
-free -h  # Linux
-# Required: 16GB+ (128GB recommended)
+# Check memory (Linux)
+free -h
+# Or on macOS
+sysctl hw.memsize
 ```
 
----
+### Required External Dependencies
 
-## 🚀 Installation Steps
+**1. LLM Backend (Choose One)**
 
-### Step 1: Extract Bundle (1 min)
+**Option A: Ollama (Recommended)**
 ```bash
-cd ~
-tar -xzf telegram_agent_complete_bundle.tar.gz
-cd telegram-agent
-```
+# macOS
+brew install ollama
 
-### Step 2: Run Setup Script (10-15 min)
-```bash
-chmod +x scripts/setup.sh
-./scripts/setup.sh
-```
+# Linux
+curl -fsSL https://ollama.ai/install.sh | sh
 
-This installs:
-- Python virtual environment
-- All Python dependencies
-- Ollama (if not present)
-- Default model (qwen2.5:7b)
-
-### Step 3: Get Telegram Bot Token (2 min)
-1. Open Telegram on your phone
-2. Message **@BotFather**
-3. Send: `/newbot`
-4. Follow prompts (choose name and username)
-5. **Copy the token** (looks like: `1234567890:ABCdefGHIjklMNOpqrsTUVwxyz`)
-6. Get your user ID from **@userinfobot**
-
-### Step 4: Configure (2 min)
-```bash
-cp .env.example .env
-nano .env  # or use: code .env, vim .env, etc.
-```
-
-Edit these two lines:
-```bash
-TELEGRAM_BOT_TOKEN=paste_your_token_here
-TELEGRAM_USER_ID=paste_your_user_id_here
-```
-
-Save and exit (Ctrl+X, Y, Enter in nano)
-
-### Step 5: Verify System (2 min)
-```bash
-source venv/bin/activate
-python verify_system.py
-```
-
-Expected output:
-```
-✅ All 13 checks passed
-System ready for deployment!
-```
-
-### Step 6: Start Agent (1 min)
-```bash
-python telegram_agent_v3.py
-```
-
-You should see:
-```
-INFO - Bot started successfully
-INFO - Loaded 11 tools
-INFO - Waiting for messages...
-```
-
-### Step 7: Test in Telegram (5 min)
-Open Telegram and message your bot:
-
-```
-/start
-→ Should welcome you
-
-Hello!
-→ Should respond conversationally
-
-What's 2+2?
-→ Should answer: 4
-
-Generate a QR code for https://example.com
-→ Should generate and send QR code image
-
-Show system stats
-→ Should display CPU, RAM, disk usage
-```
-
----
-
-## ✅ Success Checklist
-
-Your installation succeeded if:
-- [ ] `verify_system.py` shows all checks passed
-- [ ] Agent starts without errors
-- [ ] Telegram bot responds to messages
-- [ ] QR code generates
-- [ ] System stats display
-- [ ] No error messages in terminal
-
----
-
-## 🎯 What's Next?
-
-### Option A: Use Immediately
-Your agent is ready! You have:
-- 11 core tools working
-- Intelligent routing active
-- Production-ready deployment
-
-### Option B: Add MCP Integration (1-2 hours)
-Add 400+ service connectors:
-```bash
-# Follow: docs/PART_6_MCP_INTEGRATION.md
-pip install mcp==0.9.0
-brew install node
-# Configure authentication
-```
-
-### Option C: Complete Setup (8-10 hours)
-Follow full deployment guide:
-```bash
-# Read: docs/DEPLOYMENT_GUIDE_MASTER_V3.1.md
-# Follow: Parts 0-7 sequentially
-```
-
----
-
-## 🆘 Troubleshooting
-
-### Issue: "python: command not found"
-```bash
-# Use python3 instead
-python3 --version
-# Update scripts to use python3
-```
-
-### Issue: "Ollama connection refused"
-```bash
 # Start Ollama
-brew services start ollama
+ollama serve
 
-# Or on Linux
-systemctl start ollama
+# Pull a model (in a new terminal)
+ollama pull qwen2.5:7b-instruct-q4_K_M
+```
 
-# Verify
+**Option B: LM Studio**
+- Download from https://lmstudio.ai/
+- Install and start the local server
+- Download your preferred model
+
+**Option C: MLX (Apple Silicon Only)**
+- Automatically installed with optional dependencies
+- Best performance on M1/M2/M3 Macs
+
+---
+
+## Quick Installation
+
+### Step 1: Clone or Extract the Repository
+
+```bash
+# Clone from Git
+git clone https://github.com/ckindle-42/pocketportal.git
+cd pocketportal
+
+# Or if you have a release tarball
+tar -xzf pocketportal-4.7.0.tar.gz
+cd pocketportal
+```
+
+### Step 2: Install PocketPortal
+
+**Basic Installation (Core Features)**
+```bash
+pip install -e .
+```
+
+**Full Installation (All Features)**
+```bash
+pip install -e ".[all]"
+```
+
+**Custom Installation (Select Features)**
+```bash
+# Install specific feature sets
+pip install -e ".[tools,data,documents,audio]"
+
+# Available feature sets:
+# - tools: Basic tool support (QR, images, web scraping)
+# - data: Data processing (pandas, numpy, matplotlib)
+# - documents: Document processing (Word, Excel, PowerPoint, PDF)
+# - audio: Audio transcription (Whisper)
+# - knowledge: Knowledge base and RAG (semantic search)
+# - automation: Scheduling and cron
+# - browser: Browser automation (Playwright)
+# - mlx: Apple Silicon acceleration
+# - mcp: Model Context Protocol
+# - security: Docker sandboxing
+# - observability: OpenTelemetry, Prometheus
+# - distributed: Redis for distributed features
+# - dev: Development tools (pytest, black, ruff, mypy)
+# - all: Everything above
+```
+
+### Step 3: Verify Installation
+
+```bash
+# Check that PocketPortal CLI is available
+pocketportal --help
+
+# You should see the command-line interface help
+```
+
+---
+
+## Configuration
+
+### Step 1: Create Configuration Directory
+
+```bash
+# Create config directory
+mkdir -p ~/.config/pocketportal
+
+# Or use environment variable to set custom location
+export POCKETPORTAL_CONFIG_DIR=/path/to/config
+```
+
+### Step 2: Get Telegram Bot Token (For Telegram Interface)
+
+1. Open Telegram and message **@BotFather**
+2. Send: `/newbot`
+3. Follow the prompts to choose a bot name and username
+4. **Copy the token** (format: `1234567890:ABCdefGHIjklMNOpqrsTUVwxyz`)
+5. Get your Telegram User ID from **@userinfobot**
+
+### Step 3: Create Configuration File
+
+**Option A: Environment Variables (.env file)**
+
+```bash
+# Create .env file
+cat > .env << 'EOF'
+# Required: Telegram Bot Configuration
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+TELEGRAM_USER_ID=your_user_id_here
+
+# Required: LLM Backend Configuration
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=qwen2.5:7b-instruct-q4_K_M
+
+# Optional: Alternative LLM Backends
+# LM_STUDIO_HOST=http://localhost:1234
+# MLX_MODEL=mlx-community/Qwen2.5-7B-Instruct-4bit
+
+# Optional: Rate Limiting
+RATE_LIMIT_MESSAGES_PER_MINUTE=30
+RATE_LIMIT_TOKENS_PER_HOUR=100000
+
+# Optional: Observability
+ENABLE_TELEMETRY=false
+ENABLE_METRICS=false
+LOG_LEVEL=INFO
+
+# Optional: Watchdog & Reliability
+WATCHDOG_ENABLED=true
+LOG_ROTATION_ENABLED=true
+CIRCUIT_BREAKER_ENABLED=true
+EOF
+
+# Edit the file with your actual values
+nano .env
+```
+
+**Option B: YAML Configuration (config.yaml)**
+
+```bash
+# Create config.yaml
+cat > ~/.config/pocketportal/config.yaml << 'EOF'
+# PocketPortal Configuration v4.7.0
+
+interfaces:
+  telegram:
+    enabled: true
+    bot_token: "YOUR_BOT_TOKEN_HERE"
+    allowed_user_ids:
+      - YOUR_USER_ID_HERE
+
+  web:
+    enabled: false
+    host: "0.0.0.0"
+    port: 8000
+    cors_origins:
+      - "http://localhost:3000"
+
+llm:
+  default_backend: "ollama"
+  ollama:
+    host: "http://localhost:11434"
+    model: "qwen2.5:7b-instruct-q4_K_M"
+    timeout: 120
+  circuit_breaker_enabled: true
+
+security:
+  rate_limit:
+    messages_per_minute: 30
+    tokens_per_hour: 100000
+  sandbox:
+    enabled: false
+    docker_image: "python:3.11-slim"
+
+observability:
+  logging:
+    level: "INFO"
+    format: "json"
+  watchdog:
+    enabled: true
+    check_interval: 60
+  log_rotation:
+    enabled: true
+    max_bytes: 10485760  # 10MB
+    backup_count: 5
+
+shutdown_timeout_seconds: 30
+EOF
+
+# Edit with your values
+nano ~/.config/pocketportal/config.yaml
+```
+
+### Step 4: Validate Configuration
+
+```bash
+# Validate your configuration
+pocketportal validate-config
+
+# Expected output:
+# ✅ Configuration validation passed
+# ✅ All required settings present
+# ✅ Telegram bot token format valid
+# ✅ LLM backend reachable
+```
+
+---
+
+## Verification
+
+### System Health Check
+
+```bash
+# Run comprehensive health check
+pocketportal health
+
+# Expected output:
+# ✅ LLM Backend: Connected (Ollama)
+# ✅ Telegram API: Reachable
+# ✅ Database: Initialized
+# ✅ Tools: 25 tools loaded
+# ✅ System: Ready
+```
+
+### List Available Tools
+
+```bash
+# List all available tools
+pocketportal list-tools
+
+# Expected output shows all installed tools with descriptions
+```
+
+### Test LLM Connection
+
+```bash
+# Test LLM backend connectivity
+pocketportal test-llm
+
+# Should show successful connection and model response
+```
+
+---
+
+## Running PocketPortal
+
+### Start Telegram Interface
+
+```bash
+# Start PocketPortal with Telegram interface
+pocketportal start --interface telegram
+
+# You should see:
+# INFO - Starting PocketPortal 4.7.0
+# INFO - Initializing Telegram interface
+# INFO - Bot started: @YourBotName
+# INFO - Loaded 25 tools
+# INFO - Waiting for messages...
+```
+
+### Start Web Interface
+
+```bash
+# Start PocketPortal with Web interface
+pocketportal start --interface web
+
+# You should see:
+# INFO - Starting PocketPortal 4.7.0
+# INFO - Initializing Web interface
+# INFO - Server listening on http://0.0.0.0:8000
+# INFO - WebSocket endpoint: ws://0.0.0.0:8000/ws
+```
+
+### Start All Interfaces
+
+```bash
+# Start all configured interfaces
+pocketportal start --all
+
+# Starts Telegram, Web, and any other enabled interfaces
+```
+
+### Background Mode (Daemon)
+
+```bash
+# Start in background
+pocketportal start --daemon
+
+# Check status
+pocketportal status
+
+# Stop daemon
+pocketportal stop
+```
+
+---
+
+## Optional Features
+
+### 1. Enable Observability
+
+```bash
+# Install observability dependencies
+pip install -e ".[observability]"
+
+# Enable in configuration
+cat >> .env << 'EOF'
+ENABLE_TELEMETRY=true
+ENABLE_METRICS=true
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+EOF
+
+# Start with observability
+pocketportal start --interface telegram
+
+# Metrics available at http://localhost:8000/metrics
+# Health checks at http://localhost:8000/health
+```
+
+### 2. Enable MCP (Model Context Protocol)
+
+```bash
+# Install MCP support
+pip install -e ".[mcp]"
+
+# Start MCP server
+pocketportal mcp-server --port 3000
+
+# MCP server runs on http://localhost:3000
+```
+
+### 3. Enable Docker Sandboxing
+
+```bash
+# Install security features
+pip install -e ".[security]"
+
+# Verify Docker is running
+docker ps
+
+# Enable in configuration
+cat >> .env << 'EOF'
+SANDBOX_ENABLED=true
+SANDBOX_DOCKER_IMAGE=python:3.11-slim
+EOF
+```
+
+### 4. Install Additional Models
+
+```bash
+# Fast model (good for simple queries)
+ollama pull qwen2.5:3b-instruct-q4_K_M
+
+# Balanced model (recommended)
+ollama pull qwen2.5:7b-instruct-q4_K_M
+
+# High quality model (best reasoning)
+ollama pull qwen2.5:14b-instruct-q4_K_M
+
+# Code specialist
+ollama pull qwen2.5-coder:7b-instruct-q4_K_M
+
+# List installed models
 ollama list
 ```
 
-### Issue: "No module named telegram"
+---
+
+## Troubleshooting
+
+### Issue: "Command not found: pocketportal"
+
 ```bash
-source venv/bin/activate
-pip install python-telegram-bot==20.7
+# Ensure pip install completed successfully
+pip install -e .
+
+# Check if script is in PATH
+which pocketportal
+
+# If not found, use full path
+python -m pocketportal.cli --help
 ```
 
-### Issue: Bot doesn't respond
+### Issue: "Cannot connect to Ollama"
+
 ```bash
-# Check bot token is correct
+# Verify Ollama is running
+curl http://localhost:11434/api/tags
+
+# If not running, start Ollama
+ollama serve
+
+# Check firewall settings
+# Ensure port 11434 is not blocked
+```
+
+### Issue: "Telegram bot not responding"
+
+```bash
+# Verify bot token
 grep TELEGRAM_BOT_TOKEN .env
 
+# Test bot token with curl
+curl https://api.telegram.org/bot<YOUR_TOKEN>/getMe
+
 # Check user ID is correct
-grep TELEGRAM_USER_ID .env
-
-# Restart agent
-python telegram_agent_v3.py
+# Message @userinfobot to get your correct user ID
 ```
 
-### More Help
-See `docs/TROUBLESHOOTING.md` for comprehensive troubleshooting.
+### Issue: "Import errors after installation"
 
----
-
-## 📊 Performance Tuning
-
-### Recommended Models by Use Case
-
-**Fast & Light (Default)**
 ```bash
-ollama pull qwen2.5:7b-instruct-q4_K_M
-# ~5GB, 80 tokens/sec, good for most queries
+# The project uses strict src-layout (v4.6.0+)
+# You MUST install the package:
+pip install -e .
+
+# Direct Python file execution will NOT work
+# Always use: pocketportal <command>
 ```
 
-**Balanced**
+### Issue: "Database locked" errors
+
 ```bash
-ollama pull qwen2.5:14b-instruct-q4_K_M
-# ~9GB, 45 tokens/sec, better reasoning
+# Stop all PocketPortal instances
+pocketportal stop
+
+# Remove lock file
+rm ~/.local/share/pocketportal/*.db-wal
+rm ~/.local/share/pocketportal/*.db-shm
+
+# Restart
+pocketportal start --interface telegram
 ```
 
-**High Quality**
-```bash
-ollama pull qwen2.5:32b-instruct-q4_K_M
-# ~20GB, 25 tokens/sec, best quality
-```
+### Issue: "Memory leaks / High RAM usage"
 
-**Code Specialist**
 ```bash
-ollama pull qwen2.5-coder:7b-instruct-q4_K_M
-# ~5GB, optimized for programming
-```
+# Check EventBus history setting (v4.5.1+)
+# EventBus history is now opt-in by default
+# Long-running agents should NOT enable history
 
-Update `.env` to use different model:
-```bash
-OLLAMA_MODEL=qwen2.5:14b-instruct-q4_K_M
+# Restart the agent periodically
+# Use systemd or launchd for automatic restarts
 ```
 
 ---
 
-## 🔧 Production Deployment
+## Production Deployment
 
-### Auto-Start on Boot (macOS)
+### systemd Service (Linux)
+
 ```bash
-cp scripts/com_telegram_agent.plist ~/Library/LaunchAgents/
-launchctl load ~/Library/LaunchAgents/com_telegram_agent.plist
+# Create service file
+sudo nano /etc/systemd/system/pocketportal.service
 ```
 
-### Auto-Start on Boot (Linux)
-```bash
-# Create systemd service
-sudo nano /etc/systemd/system/telegram-agent.service
-
-# Add:
+```ini
 [Unit]
-Description=PocketPortal AI Agent
-After=network.target
+Description=PocketPortal AI Agent Platform
+After=network.target ollama.service
+Wants=ollama.service
 
 [Service]
 Type=simple
-User=your_username
-WorkingDirectory=/home/your_username/telegram-agent
-ExecStart=/home/your_username/telegram-agent/venv/bin/python telegram_agent_v3.py
+User=YOUR_USERNAME
+WorkingDirectory=/home/YOUR_USERNAME/pocketportal
+Environment="PATH=/home/YOUR_USERNAME/pocketportal/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/home/YOUR_USERNAME/pocketportal/venv/bin/pocketportal start --interface telegram
 Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Watchdog and monitoring
+WatchdogSec=300
+NotifyAccess=all
+
+# Resource limits
+MemoryMax=4G
+CPUQuota=200%
 
 [Install]
 WantedBy=multi-user.target
-
-# Enable
-sudo systemctl enable telegram-agent
-sudo systemctl start telegram-agent
 ```
 
----
-
-## 📈 Usage Examples
-
-### Basic Queries
-```
-What's the weather like?
-→ Responds conversationally
-
-Calculate 15% tip on $87.50
-→ Shows calculation
-
-Explain quantum computing
-→ Provides explanation
-```
-
-### Tool Usage
-```
-Create a QR code for wifi: SSID=MyNetwork, password=secret123
-→ Generates WiFi QR code
-
-Convert this JSON to YAML: {"name": "John", "age": 30}
-→ Converts and returns YAML
-
-Compress files in ~/Documents/reports as backup.zip
-→ Creates compressed archive
-
-Show me CPU and memory usage
-→ Displays system stats
-```
-
-### Voice Messages
-```
-Send a voice message via Telegram
-→ Agent transcribes and responds
-```
-
----
-
-## 🎓 Learning Path
-
-### Week 1: Core Functionality
-- Use basic tools (QR, text transform, etc.)
-- Understand routing system
-- Try different query types
-
-### Week 2: Advanced Features
-- Setup MCP integration
-- Configure authentication
-- Use Git and Docker tools
-
-### Week 3: Customization
-- Create custom tools
-- Build workflows
-- Optimize for your needs
-
-### Week 4: Production
-- Setup monitoring
-- Configure backups
-- Scale deployment
-
----
-
-## 🎉 Congratulations!
-
-You've successfully deployed a **privacy-first, production-grade AI agent**!
-
-### What You Have
-- ✅ Fully functional AI assistant
-- ✅ 11 production-ready tools
-- ✅ Intelligent routing (10-20x faster)
-- ✅ 100% local processing
-- ✅ No cloud dependencies
-- ✅ Complete control over your data
-
-### What You Can Do
-- Answer questions conversationally
-- Generate QR codes
-- Process files
-- Analyze data
-- Execute commands safely
-- Transcribe voice messages
-- Monitor system resources
-- And much more!
-
----
-
-## 📚 Documentation
-
-- **README.md** - This directory overview
-- **docs/DEPLOYMENT_GUIDE_MASTER_V3.1.md** - Complete guide
-- **docs/PART_0_QUICK_START.md** - Prerequisites
-- **docs/PART_1_ROUTING_SYSTEM.md** - Routing setup
-- **docs/TROUBLESHOOTING.md** - Problem solving
-
----
-
-## 🚀 Ready for More?
-
-### Add MCP Integration
-**Adds 400+ service connectors**
 ```bash
-# Follow: docs/PART_6_MCP_INTEGRATION.md
+# Enable and start service
+sudo systemctl daemon-reload
+sudo systemctl enable pocketportal
+sudo systemctl start pocketportal
+
+# Check status
+sudo systemctl status pocketportal
+
+# View logs
+sudo journalctl -u pocketportal -f
 ```
 
-### Complete All Addons
-**Adds Git, Docker, system tools**
+### launchd Service (macOS)
+
 ```bash
-# Follow: docs/PART_7_ADDON_TOOLS.md
+# Create plist file
+nano ~/Library/LaunchAgents/com.pocketportal.agent.plist
 ```
 
-### Build Custom Tools
-**Extend for your needs**
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.pocketportal.agent</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/pocketportal</string>
+        <string>start</string>
+        <string>--interface</string>
+        <string>telegram</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/YOUR_USERNAME/pocketportal</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/YOUR_USERNAME/pocketportal/logs/stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/YOUR_USERNAME/pocketportal/logs/stderr.log</string>
+</dict>
+</plist>
+```
+
 ```bash
-# Use: scripts/generate_addon_tools.py
+# Load service
+launchctl load ~/Library/LaunchAgents/com.pocketportal.agent.plist
+
+# Check status
+launchctl list | grep pocketportal
+
+# View logs
+tail -f ~/pocketportal/logs/stdout.log
+```
+
+### Docker Deployment
+
+```bash
+# Create Dockerfile
+cat > Dockerfile << 'EOF'
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy application
+COPY . /app
+
+# Install PocketPortal
+RUN pip install -e ".[all]"
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD pocketportal health || exit 1
+
+# Run application
+CMD ["pocketportal", "start", "--all"]
+EOF
+
+# Build image
+docker build -t pocketportal:4.7.0 .
+
+# Run container
+docker run -d \
+    --name pocketportal \
+    --restart unless-stopped \
+    -e TELEGRAM_BOT_TOKEN=your_token \
+    -e TELEGRAM_USER_ID=your_id \
+    -e OLLAMA_HOST=http://host.docker.internal:11434 \
+    -v pocketportal-data:/root/.local/share/pocketportal \
+    pocketportal:4.7.0
+
+# Check logs
+docker logs -f pocketportal
 ```
 
 ---
 
-**Need help?** Check `docs/TROUBLESHOOTING.md` or review completed tool implementations as examples.
+## Next Steps
 
-**Ready to customize?** Read `docs/TOOL_ADDONS_MASTER_PLAN.md` for extension strategies.
+### Testing Your Setup
+
+```bash
+# 1. Message your Telegram bot
+# Open Telegram and send: /start
+
+# 2. Test basic queries
+# Send: "Hello!"
+# Send: "What's 2+2?"
+
+# 3. Test tools
+# Send: "Generate a QR code for https://example.com"
+# Send: "Show system stats"
+
+# 4. Test help
+# Send: /help
+```
+
+### Monitoring
+
+```bash
+# View live logs
+pocketportal logs --follow
+
+# View queue status
+pocketportal queue stats
+
+# Check health
+pocketportal health
+
+# View metrics (if observability enabled)
+curl http://localhost:8000/metrics
+```
+
+### Upgrading
+
+```bash
+# Pull latest code
+git pull origin main
+
+# Reinstall
+pip install -e ".[all]" --upgrade
+
+# Verify version
+pocketportal --version
+
+# Restart
+pocketportal stop
+pocketportal start --interface telegram
+```
 
 ---
 
-**Version:** 3.1.0  
-**Install Time:** ~30 minutes  
-**Difficulty:** Beginner-friendly  
+## Documentation
 
-**Welcome to your new AI assistant!** 🤖
+- **Architecture**: [docs/architecture.md](./architecture.md)
+- **Changelog**: [CHANGELOG.md](../CHANGELOG.md)
+- **Legacy v3.x Setup**: [docs/archive/SETUP_V3.md](./archive/SETUP_V3.md)
+- **Security**: [docs/security/](./security/)
+
+---
+
+## Support
+
+- **Issues**: https://github.com/ckindle-42/pocketportal/issues
+- **Documentation**: https://github.com/ckindle-42/pocketportal/tree/main/docs
+
+---
+
+**Version**: 4.7.0
+**Last Updated**: December 2025
+**Installation Time**: ~30 minutes
+
+**Welcome to PocketPortal - Your Privacy-First AI Agent Platform!** 🚀
