@@ -5,6 +5,56 @@ All notable changes to PocketPortal will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.7.4] - 2025-12-18
+
+### Changed - Documentation & Governance Alignment
+
+- **Repository Review & Remediation**: Comprehensive documentation and structural alignment
+  - Normalized all changelog dates (removed placeholder dates like `2025-XX-XX`)
+  - v4.3.0 and v4.2.0 dates corrected to actual release date: 2025-12-17
+  - All historical releases now have accurate dates from git history
+
+- **README Structure Alignment**: Project structure now reflects actual src-layout
+  - Updated directory tree to show `src/pocketportal/` (actual source structure)
+  - Added note about strict src-layout and PEP 517/518 compliance
+  - Removed references to non-existent directories
+  - Structure now matches reality for contributors working with source code
+
+- **Versioning & Release Discipline**: Formalized governance for version management
+  - Added comprehensive "Versioning & Release Discipline" section to README
+  - Established `pyproject.toml` as Single Source of Truth (SSOT) for version numbers
+  - Documented mandatory synchronization between `pyproject.toml`, `CHANGELOG.md`, and docs
+  - Created release validation checklist
+  - Prohibited future-dated and placeholder changelog entries
+
+- **Quick-Start Enhancement**: Improved onboarding with validation and dependency guidance
+  - Added step-by-step installation validation process
+  - Documented all optional dependency profiles (extras) with clear descriptions
+  - Added "Dependency Profiles" section explaining when to use each extra
+  - Included post-install validation commands and expected outcomes
+  - Recommended dependency combinations for different use cases
+
+- **Modularity Guide for Contributors**: Clear architectural boundaries
+  - Added comprehensive "Modularity Guide" section to README
+  - Documented architectural layers and component categories
+  - Defined safe contribution boundaries (Core vs Tools vs Interfaces vs Protocols)
+  - Provided examples of safe and unsafe changes for each component type
+  - Included anti-patterns to avoid (God Modules, tight coupling, etc.)
+  - Explained plugin development via entry points for third-party extensions
+
+### Technical Impact
+
+- **Zero Breaking Changes**: All changes are documentation and governance only
+- **Improved Contributor Experience**: Clear boundaries reduce accidental breaking changes
+- **Enhanced Credibility**: Accurate dates and version discipline strengthen project trust
+- **Better Onboarding**: Comprehensive quick-start reduces setup friction
+
+### Migration Notes
+
+- **Non-Breaking**: No code changes, API remains unchanged
+- **Action Recommended**: Review new Modularity Guide before contributing
+- **Action Recommended**: Follow new Versioning & Release Discipline for future releases
+
 ## [4.7.3] - 2025-12-18
 
 ### Changed - Technical Debt Cleanup & Import Path Consolidation
@@ -645,7 +695,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Independent verification without user involvement
 - Total test coverage: 20 automated tests
 
-## [4.3.0] - 2025-12-XX
+## [4.3.0] - 2025-12-17
 
 ### Added
 - Plugin ecosystem via entry points
@@ -658,7 +708,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Merged root docs into `docs/` directory
 - Consistent versioning across all files
 
-## [4.2.0] - 2025-XX-XX
+## [4.2.0] - 2025-12-17
 
 ### Added
 - DAO pattern for persistence layer
