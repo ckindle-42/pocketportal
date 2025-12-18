@@ -90,8 +90,8 @@ git clone https://github.com/ckindle-42/pocketportal.git
 cd pocketportal
 
 # Or if you have a release tarball
-tar -xzf pocketportal-4.7.0.tar.gz
-cd pocketportal
+tar -xzf pocketportal-<version>.tar.gz
+cd pocketportal-<version>
 ```
 
 ### Step 2: Install PocketPortal
@@ -258,7 +258,7 @@ nano .env
 ```bash
 # Create config.yaml
 cat > ~/.config/pocketportal/config.yaml << 'EOF'
-# PocketPortal Configuration v4.7.0
+# PocketPortal Configuration
 
 interfaces:
   telegram:
@@ -369,7 +369,7 @@ pocketportal test-llm
 pocketportal start --interface telegram
 
 # You should see:
-# INFO - Starting PocketPortal 4.7.0
+# INFO - Starting PocketPortal <version>
 # INFO - Initializing Telegram interface
 # INFO - Bot started: @YourBotName
 # INFO - Loaded 25 tools
@@ -383,7 +383,7 @@ pocketportal start --interface telegram
 pocketportal start --interface web
 
 # You should see:
-# INFO - Starting PocketPortal 4.7.0
+# INFO - Starting PocketPortal <version>
 # INFO - Initializing Web interface
 # INFO - Server listening on http://0.0.0.0:8000
 # INFO - WebSocket endpoint: ws://0.0.0.0:8000/ws
@@ -705,7 +705,7 @@ CMD ["pocketportal", "start", "--all"]
 EOF
 
 # Build image
-docker build -t pocketportal:4.7.0 .
+docker build -t pocketportal:latest .
 
 # Run container
 docker run -d \
@@ -715,7 +715,7 @@ docker run -d \
     -e TELEGRAM_USER_ID=your_id \
     -e OLLAMA_HOST=http://host.docker.internal:11434 \
     -v pocketportal-data:/root/.local/share/pocketportal \
-    pocketportal:4.7.0
+    pocketportal:latest
 
 # Check logs
 docker logs -f pocketportal
