@@ -26,7 +26,8 @@ Key Features:
 - 📈 OpenTelemetry observability
 
 Usage:
-    from pocketportal.core import create_agent_core, SecurityMiddleware
+    from pocketportal.core import create_agent_core
+    from pocketportal.security import SecurityMiddleware
     from pocketportal.interfaces import TelegramInterface, WebInterface
 
     # Create the agent core
@@ -58,8 +59,10 @@ from .core import (
     ContextManager,
     EventBus,
     EventType,
-    SecurityMiddleware,
 )
+
+# Security components
+from .security import SecurityMiddleware
 
 # Routing system
 from .routing import (

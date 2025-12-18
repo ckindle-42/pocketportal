@@ -22,11 +22,8 @@ Key Improvements in Current Architecture:
 - ✅ Security middleware wrapper
 
 Usage:
-    from pocketportal.core import (
-        create_agent_core,
-        SecurityMiddleware,
-        ProcessingResult
-    )
+    from pocketportal.core import create_agent_core, ProcessingResult
+    from pocketportal.security import SecurityMiddleware
 
     # Create core with factory function
     config = {...}
@@ -50,7 +47,6 @@ from .engine import AgentCore, ProcessingResult, create_agent_core
 from .context_manager import ContextManager, Message
 from .event_bus import EventBus, EventType, Event, EventEmitter
 from .prompt_manager import PromptManager, get_prompt_manager
-from .security_middleware import SecurityMiddleware, SecurityContext
 from .structured_logger import (
     StructuredLogger,
     TraceContext,
@@ -90,8 +86,6 @@ __all__ = [
     'EventEmitter',
     'PromptManager',
     'get_prompt_manager',
-    'SecurityMiddleware',
-    'SecurityContext',
 
     # Logging
     'StructuredLogger',

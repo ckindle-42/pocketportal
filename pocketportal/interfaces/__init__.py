@@ -1,16 +1,22 @@
 """
 Interfaces module - Adapters for different platforms
+====================================================
+
+Modularized interface packages for better organization:
+- telegram/: Telegram bot interface and renderers
+- web/: FastAPI + WebSocket web interface
 """
 
 from .base import BaseInterface, InterfaceManager, Message, Response
+from .telegram import TelegramInterface, TelegramRenderer
+from .web import WebInterface
 
 __all__ = [
     'BaseInterface',
     'InterfaceManager',
     'Message',
     'Response',
+    'TelegramInterface',
+    'TelegramRenderer',
+    'WebInterface',
 ]
-
-# Interfaces will be imported individually as needed
-# from .telegram_interface import TelegramInterface
-# from .web_interface import app (FastAPI)
