@@ -1,48 +1,87 @@
 # PocketPortal Test Suite
 
-This directory contains tests for the PocketPortal project.
+This directory contains comprehensive tests for all PocketPortal functionality.
 
-## Test Files
+## 📖 Complete Testing Guide
 
-- `test_router.py` - Tests for intelligent routing and task classification
-- `test_security.py` - Tests for security module (path traversal, command injection, XSS prevention)
-- `test_base_tool.py` - Tests for base tool framework and parameter validation
+**See [docs/TESTING.md](../docs/TESTING.md) for the complete testing guide** including:
+- Installation and setup
+- Running tests (unit, integration, E2E)
+- Test structure and coverage
+- Writing new tests
+- Troubleshooting
 
-## Running Tests
+## Quick Start
 
-Install pytest if not already installed:
 ```bash
-pip install pytest pytest-asyncio
+# Install with dev dependencies
+pip install -e ".[dev]"
+
+# Run all tests
+python -m pytest tests/ -v
+
+# Run unit tests only (fast)
+python -m pytest tests/unit/ -v -m unit
+
+# Run with coverage
+python -m pytest tests/ --cov=pocketportal --cov-report=html
 ```
 
-Run all tests:
-```bash
-pytest tests/ -v
-```
+## Test Structure
 
-Run specific test file:
-```bash
-pytest tests/test_router.py -v
 ```
-
-Run with coverage:
-```bash
-pip install pytest-cov
-pytest tests/ --cov=. --cov-report=html
+tests/
+├── conftest.py           # Shared fixtures and configuration
+├── unit/                 # Unit tests (fast, isolated)
+│   ├── tools/           # Tests for all 33 tools
+│   │   ├── test_git_tools.py
+│   │   ├── test_docker_tools.py
+│   │   ├── test_data_tools.py
+│   │   ├── test_system_tools.py
+│   │   ├── test_automation_tools.py
+│   │   ├── test_document_tools.py
+│   │   └── test_web_and_media_tools.py
+│   └── ...              # Framework tests
+├── integration/         # Integration tests
+│   └── test_tool_loading.py
+└── e2e/                # End-to-end tests
+    └── test_cli_commands.py
 ```
 
 ## Test Coverage
 
-Current test coverage focuses on:
-- ✅ Intelligent routing logic
-- ✅ Security sanitization (path traversal, command injection, XSS)
-- ✅ Base tool parameter validation
-- ⚠️ Individual tool implementations (add as needed)
+✅ **All 33 tools have unit test coverage (100%)**
 
-## Adding New Tests
+- **Audio** (1): audio_transcribe
+- **Automation** (2): job_scheduler, shell_safety
+- **Data** (5): csv_analyzer, excel_processor, file_compressor, math_visualizer, pdf_ocr, qr_generator, text_transformer
+- **Dev** (15): Git tools (9), Docker tools (5), python_env_manager
+- **Utility** (9): clipboard_manager, document_metadata, system_stats, process_monitor, etc.
+- **Web** (1): http_client
 
-When adding new tools or features, add corresponding tests:
-1. Create test file: `tests/test_<module>.py`
-2. Follow existing pattern with pytest
-3. Include both positive and negative test cases
-4. Test security implications
+## Running Specific Tests
+
+```bash
+# Test specific tool category
+python -m pytest tests/unit/tools/test_git_tools.py -v
+python -m pytest tests/unit/tools/test_docker_tools.py -v
+
+# Test CLI functionality
+python -m pytest tests/e2e/test_cli_commands.py -v
+
+# Test tool loading
+python -m pytest tests/integration/test_tool_loading.py -v
+```
+
+## CI/CD
+
+Tests run automatically on:
+- Push to main branch
+- Pull requests
+- Manual workflow dispatch
+
+See `.github/workflows/tests.yml` for CI configuration.
+
+---
+
+For detailed information, troubleshooting, and advanced usage, see **[docs/TESTING.md](../docs/TESTING.md)**.
