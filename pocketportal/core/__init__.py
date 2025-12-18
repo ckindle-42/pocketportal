@@ -57,6 +57,7 @@ from .structured_logger import (
 
 # Exceptions
 from .exceptions import (
+    ErrorCode,
     PocketPortalError,
     PolicyViolationError,
     ModelQuotaExceededError,
@@ -95,6 +96,7 @@ __all__ = [
     'set_trace_id',
 
     # Exceptions
+    'ErrorCode',
     'PocketPortalError',
     'PolicyViolationError',
     'ModelQuotaExceededError',
@@ -108,5 +110,3 @@ __all__ = [
     # Types
     'InterfaceType',
 ]
-
-__version__ = '4.1.1'

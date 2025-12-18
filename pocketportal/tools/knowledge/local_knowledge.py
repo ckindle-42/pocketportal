@@ -15,7 +15,7 @@ try:
 except ImportError:
     HAS_AIOFILES = False
 
-from ..base_tool import BaseTool, ToolMetadata, ToolParameter, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolParameter, ToolCategory
 
 
 class LocalKnowledgeTool(BaseTool):

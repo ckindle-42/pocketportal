@@ -1,14 +1,14 @@
-# 🚀 PocketPortal 4.5.0 - One-for-All AI Agent Platform
+# 🚀 PocketPortal 4.5.1 - One-for-All AI Agent Platform
 
 **Privacy-First, Interface-Agnostic AI Agent with Professional Architecture and Enterprise Features**
 
 ---
 
-## 🎉 PocketPortal 4.5.0 - Architectural Excellence & Operational Maturity
+## 🎉 PocketPortal 4.5.1 - Architectural Excellence & Operational Maturity
 
-**PocketPortal 4.5.0** achieves true "One-for-All" status with professional-grade architecture, modular interfaces, stateful execution, and enterprise operational features.
+**PocketPortal 4.5.1** achieves true "One-for-All" status with professional-grade architecture, modular interfaces, stateful execution, and enterprise operational features.
 
-### Evolution from 3.x to 4.5.0
+### Evolution from 3.x to 4.5.1
 
 ```
 v3.x:   Telegram Bot → [Monolithic Logic]
@@ -17,7 +17,7 @@ v4.2:   + DAO Pattern + Dynamic Discovery + Lazy Loading
 v4.3:   + Plugin Ecosystem + Observability + Testing Infrastructure
 v4.4:   + Async Job Queue + MCP Protocol Mesh + Full Observability Stack
 v4.4.1: + Operational Cleanup + Version SSOT + ToolManifest + DLQ CLI
-v4.5.0: + Modular Interfaces + Lifecycle Management + Approval Protocol
+v4.5.1: + Modular Interfaces + Lifecycle Management + Approval Protocol
         + Stateful Execution + Cost Tracking + Secret Abstraction
 ```
 
@@ -137,7 +137,7 @@ pocketportal/
 
 ## 🎯 Success Criteria
 
-Your 4.1 deployment succeeds when:
+Your deployment succeeds when:
 - ✅ Agent responds via Telegram or Web interface
 - ✅ Multiple interfaces work simultaneously
 - ✅ Context shared across interfaces
@@ -146,73 +146,9 @@ Your 4.1 deployment succeeds when:
 - ✅ Configuration validation passes
 - ✅ No errors in logs
 
-## 🆕 What's New in 4.4
+## 📋 What's New
 
-### Phase 2: Async Job Queue
-- **Priority Job Queue**: Background processing with LOW/NORMAL/HIGH/CRITICAL priorities
-- **Worker Pool**: Concurrent job processing with configurable worker count
-- **Auto Retry**: Automatic retry on failure with exponential backoff
-- **Event Integration**: Real-time job status updates via event bus
-- **Stale Job Recovery**: Automatic detection and requeuing of stuck jobs
-- **Swappable Backends**: DAO pattern supports SQLite, Redis, PostgreSQL
-
-### Phase 3: MCP Protocol Elevation
-- **Bidirectional MCP**: Run as both MCP client AND server
-- **Protocol Mesh**: Connect PocketPortal ↔ Claude Desktop ↔ Other MCP apps
-- **Universal Resources**: Unified API for file://, http://, mcp://, db:// resources
-- **Resource Providers**: Pluggable providers for different resource types
-- **Batch Resolution**: Resolve multiple resources in parallel
-- **CLI Server**: `pocketportal mcp-server` to expose tools via MCP
-
-### Phase 4: Full Observability Stack
-- **OpenTelemetry Tracing**: Distributed tracing with Jaeger/Tempo integration
-- **Prometheus Metrics**: Production-grade metrics at `/metrics` endpoint
-  - HTTP request counters and duration histograms
-  - Job queue metrics (pending, running, completed)
-  - Worker pool metrics (total, busy, idle)
-  - LLM request metrics (tokens, duration, model)
-  - Error counters by type and component
-- **Kubernetes Health Probes**:
-  - `/health/live` - Liveness probe
-  - `/health/ready` - Readiness probe
-  - `/health` - Full health check
-- **Config Hot-Reload**: Zero-downtime configuration updates
-  - Watch YAML/JSON/TOML config files
-  - Automatic validation and rollback
-  - Callback system for config changes
-
-### Previous: 4.3 Features
-- **Plugin Ecosystem**: Third-party tools via entry points
-- **Testing Infrastructure**: pytest markers for organized test execution
-- **Documentation**: Consolidated docs and strategic planning
-
----
-
-## 🔧 What's New in 4.2
-
-### Architectural Refinements
-- **DAO Pattern**: Repository interfaces for swappable persistence (SQLite → PostgreSQL/Redis)
-- **Dynamic Tool Discovery**: pkgutil-based automatic tool registration (zero manual updates)
-- **Lazy Loading**: Heavy dependencies loaded on-demand (startup: ~3s → <500ms)
-- **Persistence Layer**: Abstract repositories (`ConversationRepository`, `KnowledgeRepository`)
-- **Scalability Foundation**: Core logic decoupled from database implementation
-
----
-
-## ⚙️ What's New in 4.1
-
-### Operational Excellence
-- **Pydantic Settings**: Type-safe configuration with validation at startup
-- **BaseInterface ABC**: Standardized interface contract for consistency
-- **Dynamic Tool Discovery**: Auto-detect tools without manual registration
-- **Unified CLI**: Single `pocketportal` command for all operations
-- **Deployment Configs**: Ready-to-use systemd and launchd configurations
-
-### Cleaner Structure
-- Consolidated documentation in `docs/` directory
-- Platform-specific deployment scripts organized by OS
-- Updated installation scripts using modern `pyproject.toml`
-- Removed legacy v3.x artifacts and version conflicts
+For detailed release notes and version-specific changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -224,7 +160,7 @@ Previous versions of PocketPortal (v3.x) used a monolithic architecture. Migrati
 
 ---
 
-**Version:** 4.5.0
+**Version:** 4.5.1
 **Release Date:** December 2025
 **License:** MIT
 

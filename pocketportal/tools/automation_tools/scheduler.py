@@ -4,7 +4,7 @@ import asyncio
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
-from ..base_tool import BaseTool, ToolMetadata, ToolParameter, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolParameter, ToolCategory
 
 
 class JobSchedulerTool(BaseTool):

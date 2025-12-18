@@ -5,7 +5,7 @@ import subprocess
 import re
 from typing import Dict, Any, List, Tuple
 
-from ..base_tool import BaseTool, ToolMetadata, ToolParameter, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolParameter, ToolCategory
 
 
 class ShellSafetyTool(BaseTool):

@@ -5,7 +5,7 @@ import sys
 import subprocess
 from typing import Dict, Any, List
 
-from ..base_tool import BaseTool, ToolMetadata, ToolParameter, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolParameter, ToolCategory
 
 
 class PythonEnvManagerTool(BaseTool):

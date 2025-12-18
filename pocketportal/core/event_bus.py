@@ -78,15 +78,28 @@ class EventBus:
     - Multiple subscribers per event type
     - Non-blocking event delivery
     - Error isolation (one subscriber failure doesn't affect others)
+
+    Event History:
+    - By default, event history is disabled to prevent memory leaks in long-running agents
+    - Enable via enable_history=True if you need event auditing
+    - For production auditing, use the persistence layer instead of in-memory storage
     """
 
-    def __init__(self):
-        """Initialize event bus"""
-        self._subscribers: Dict[EventType, List[Callable]] = {}
-        self._event_history: List[Event] = []
-        self._max_history = 1000  # Keep last 1000 events
+    def __init__(self, enable_history: bool = False, max_history: int = 1000):
+        """
+        Initialize event bus
 
-        logger.info("EventBus initialized")
+        Args:
+            enable_history: Enable in-memory event history (default: False).
+                           For long-running agents, prefer using the persistence layer.
+            max_history: Maximum number of events to keep in memory (default: 1000)
+        """
+        self._subscribers: Dict[EventType, List[Callable]] = {}
+        self._enable_history = enable_history
+        self._event_history: List[Event] = [] if enable_history else []
+        self._max_history = max_history
+
+        logger.info(f"EventBus initialized (history: {enable_history})")
 
     def subscribe(self, event_type: EventType, callback: Callable):
         """
@@ -136,10 +149,11 @@ class EventBus:
             trace_id=trace_id
         )
 
-        # Add to history
-        self._event_history.append(event)
-        if len(self._event_history) > self._max_history:
-            self._event_history.pop(0)
+        # Add to history (only if enabled to prevent memory leaks)
+        if self._enable_history:
+            self._event_history.append(event)
+            if len(self._event_history) > self._max_history:
+                self._event_history.pop(0)
 
         # Get subscribers for this event type
         subscribers = self._subscribers.get(event_type, [])

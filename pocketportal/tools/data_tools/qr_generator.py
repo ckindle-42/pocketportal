@@ -4,7 +4,7 @@ import io
 import base64
 from typing import Dict, Any
 
-from ..base_tool import BaseTool, ToolMetadata, ToolParameter, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolParameter, ToolCategory
 
 
 class QRGeneratorTool(BaseTool):
