@@ -1,18 +1,38 @@
-# Critical Data Integrity and Security Fixes
+# PocketPortal Security & Critical Fixes
 
-## Overview
+**Canonical Source** — This is the single source of truth for all security fixes and critical improvements in PocketPortal.
 
-This document describes the critical security and data integrity fixes implemented to address three major risks in the PocketPortal system.
+**Last Updated:** 2025-12-18
+**Current Version:** 4.7.4
+**Status:** All fixes implemented and verified
 
-## 1. Data Corruption Risk Fix (local_knowledge.py)
+---
 
-### Problem
+## Table of Contents
+
+1. [Current Architecture Fixes (v4.x)](#current-architecture-fixes-v4x)
+2. [Historical Fixes (v3.x Legacy)](#historical-fixes-v3x-legacy)
+3. [Testing & Verification](#testing--verification)
+4. [Security Principles](#security-principles)
+
+---
+
+## Current Architecture Fixes (v4.x)
+
+These fixes apply to the current modular, interface-agnostic PocketPortal architecture (v4.0+).
+
+### 1. Data Corruption Risk Fix (Atomic Writes)
+
+**Applicable:** v4.x modular architecture
+**Files:** Knowledge base and persistent storage components
+
+#### Problem
 The knowledge base was using direct file writes with `json.dump()`, which could lead to:
 - **Data corruption** if the process crashed during write
 - **Race conditions** with concurrent writes
 - **Complete data loss** in case of power failure during save
 
-### Solution
+#### Solution
 Implemented atomic write pattern with the following protections:
 
 1. **Atomic Writes**: Write to temporary file first, then atomic rename
@@ -35,25 +55,28 @@ Implemented atomic write pattern with the following protections:
 
 4. **Crash Recovery**: Automatically restores from backup on failure
 
-### Impact
+#### Impact
 - ✅ Zero data loss even if process crashes mid-write
 - ✅ No race conditions with concurrent access
 - ✅ Automatic recovery from failures
 
-### Files Changed
-- `telegram_agent_tools/knowledge_tools/local_knowledge.py`
+#### Files Changed
+- `src/pocketportal/tools/knowledge_tools/local_knowledge.py`
 
 ---
 
-## 2. Persistent Rate Limiting (security_module.py)
+### 2. Persistent Rate Limiting
 
-### Problem
+**Applicable:** v4.x modular architecture
+**Files:** `src/pocketportal/security/`
+
+#### Problem
 Rate limiter stored data in memory, which reset on every restart:
 - **Security vulnerability**: Malicious users could bypass rate limits by forcing restarts
 - **No abuse tracking**: Violation history lost on restart
 - **Easy to exploit**: Simple crash triggers full quota reset
 
-### Solution
+#### Solution
 Implemented persistent storage for rate limit data:
 
 1. **Disk Persistence**: Rate limit data saved to disk
@@ -74,26 +97,30 @@ Implemented persistent storage for rate limit data:
 
 4. **Old Data Cleanup**: Expired requests automatically removed
 
-### Impact
+#### Impact
 - ✅ Rate limits survive restarts (prevents bypass attacks)
 - ✅ Violation tracking persists
 - ✅ Malicious users cannot reset quotas by crashing the bot
 
-### Files Changed
-- `security/security_module.py`
+#### Files Changed
+- `src/pocketportal/security/rate_limiter.py`
 
 ---
 
-## 3. Circuit Breaker Pattern (execution_engine.py)
+### 3. Circuit Breaker Pattern (LLM Reliability)
 
-### Problem
+**Applicable:** v4.x modular architecture
+**Version:** Introduced in v4.6.0
+**Files:** `src/pocketportal/routing/execution_engine.py`
+
+#### Problem
 When a backend (e.g., Ollama) failed, the system would:
 - **Repeatedly retry** the same failing backend
 - **Waste time** waiting for timeouts
 - **No failover strategy** for persistent failures
 - **Poor user experience** with slow responses
 
-### Solution
+#### Solution
 Implemented circuit breaker pattern:
 
 1. **Failure Tracking**: Monitors backend health
@@ -128,61 +155,15 @@ Implemented circuit breaker pattern:
    # }
    ```
 
-### Impact
+#### Impact
 - ✅ No wasted time on failing backends
 - ✅ Automatic recovery when backend comes back
 - ✅ Better user experience (faster failures)
 - ✅ Resource efficiency (no timeout wastage)
 
-### Files Changed
-- `routing/execution_engine.py`
-
----
-
-## Testing
-
-Comprehensive test suite created in `tests/test_data_integrity.py`:
-
-### Test Coverage
-
-**Atomic Writes:**
-- ✅ Backup creation
-- ✅ Crash survival
-- ✅ No partial data corruption
-- ✅ Concurrent write safety
-
-**Persistent Rate Limiting:**
-- ✅ Data persists across restarts
-- ✅ Prevents restart bypass attacks
-- ✅ Automatic cleanup of old data
-- ✅ Performance under load
-
-**Circuit Breaker:**
-- ✅ Opens after threshold failures
-- ✅ Prevents repeated failures
-- ✅ Transitions to half-open
-- ✅ Closes on successful recovery
-
-### Running Tests
-```bash
-python -m pytest tests/test_data_integrity.py -v
-```
-
----
-
-## Configuration
-
-### Rate Limiter Persistence
+#### Configuration
 ```python
-# Default: data/rate_limits.json
-limiter = RateLimiter(
-    persist_path=Path('custom/path/rate_limits.json')
-)
-```
-
-### Circuit Breaker Settings
-```python
-# In config dict:
+# In config dict or settings:
 config = {
     'circuit_breaker_threshold': 3,       # Failures before opening
     'circuit_breaker_timeout': 60,        # Seconds before retry
@@ -190,27 +171,7 @@ config = {
 }
 ```
 
----
-
-## Migration Notes
-
-### For Existing Deployments
-
-1. **Knowledge Base**: No migration needed
-   - Existing data will be read normally
-   - New atomic write protections apply on next save
-
-2. **Rate Limiter**: No migration needed
-   - Will start with clean slate
-   - New data will persist going forward
-
-3. **Circuit Breaker**: No migration needed
-   - Automatically integrated into execution engine
-   - Zero configuration required
-
-### Monitoring
-
-Check circuit breaker status:
+#### Monitoring
 ```python
 # Get detailed status
 status = engine.get_circuit_breaker_status()
@@ -221,64 +182,287 @@ engine.reset_circuit_breaker('ollama')
 
 ---
 
-## Performance Impact
+### 4. Input Sanitization (v4.x)
 
-All fixes are designed for minimal performance impact:
+**Applicable:** v4.x modular architecture
+**Files:** `src/pocketportal/security/input_sanitizer.py`
 
-| Fix | Performance Impact | Notes |
-|-----|-------------------|-------|
-| Atomic Writes | ~1-2ms overhead | One-time cost per save |
-| Rate Limiter Persistence | ~0.5-1ms overhead | Amortized across requests |
-| Circuit Breaker | <0.1ms overhead | Reduces total latency by skipping failures |
+#### Protections Implemented
+- ✅ Path traversal prevention (`../../../etc/passwd`)
+- ✅ Dangerous command detection (`rm -rf /`, `dd`, etc.)
+- ✅ SQL injection prevention (`DROP TABLE`, `DELETE FROM`)
+- ✅ XSS prevention in responses (`<script>`, `onclick=`)
 
-**Net Result**: Improved performance due to circuit breaker preventing timeout waste
+#### Integration
+All user input is sanitized before execution:
+```python
+# Security: Sanitize user input before execution
+sanitized_query, warnings = self.input_sanitizer.sanitize_command(user_message)
+
+if warnings:
+    logger.warning(f"Security warnings: {warnings}")
+    await interface.send_warning(warnings)
+
+result = await engine.execute(query=sanitized_query)
+```
 
 ---
 
-## Security Considerations
+## Historical Fixes (v3.x Legacy)
+
+These fixes were applied to the legacy v3.x monolithic architecture. They are documented here for historical reference only. **The v3.x architecture has been completely replaced by v4.x.**
+
+### v3.x Critical Security Issue (December 2025)
+
+**⚠️ Historical Reference Only — v3.x is deprecated**
+
+#### 🔴 CRITICAL: Security Module Not Integrated (v3.0.0)
+
+**Issue:** Input sanitization module was initialized but never called in v3.x
+**Severity:** HIGH
+**Impact:** User messages passed directly to execution without sanitization
+
+**v3.x Vulnerable Code (Fixed in v3.0.1):**
+```python
+# BEFORE (VULNERABLE):
+result = await self.execution_engine.execute(
+    query=user_message,  # ❌ Unsanitized input!
+    system_prompt=self._build_system_prompt()
+)
+
+# AFTER (SECURE):
+sanitized_query, warnings = self.input_sanitizer.sanitize_command(user_message)
+result = await self.execution_engine.execute(
+    query=sanitized_query,  # ✅ Sanitized input
+    system_prompt=self._build_system_prompt()
+)
+```
+
+**Resolution:** Fixed in v3.0.1, then superseded by v4.x modular architecture
+
+---
+
+### v3.x Code Quality Fixes
+
+**⚠️ Historical Reference Only — v3.x is deprecated**
+
+#### Missing Import in `local_knowledge.py` (v3.x)
+- **Issue:** Missing `from datetime import datetime`
+- **Impact:** Potential runtime errors
+- **Status:** Fixed in v3.0.1, refactored in v4.x
+
+#### Hardcoded Paths (v3.x)
+- **Issue:** Hardcoded `data/knowledge_base.json` ignored `KNOWLEDGE_BASE_DIR`
+- **Impact:** Configuration ignored, deployment inflexibility
+- **Fix:** Respect environment variables
+- **Status:** Fixed in v3.0.1, refactored in v4.x with proper config management
+
+#### Tool Registry (v3.x)
+- **Issue:** Manual tool registration, inconsistent naming
+- **Fix:** Auto-discovery, validation, statistics
+- **Status:** Completely redesigned in v4.x with plugin architecture
+
+---
+
+## Testing & Verification
+
+### Current v4.x Test Suite
+
+Comprehensive test coverage in `tests/`:
+
+#### Data Integrity Tests
+```bash
+pytest tests/unit/test_data_integrity.py -v
+```
+
+**Coverage:**
+- ✅ Atomic write backup creation
+- ✅ Crash survival testing
+- ✅ No partial data corruption
+- ✅ Concurrent write safety
+
+#### Security Tests
+```bash
+pytest tests/unit/test_security.py -v
+```
+
+**Coverage:**
+- ✅ Input sanitization (path traversal, command injection, SQL injection)
+- ✅ Rate limiting persistence across restarts
+- ✅ Rate limit bypass prevention
+- ✅ XSS prevention
+
+#### Circuit Breaker Tests
+```bash
+pytest tests/integration/test_circuit_breaker.py -v
+```
+
+**Coverage:**
+- ✅ Opens after threshold failures
+- ✅ Prevents repeated failures
+- ✅ Transitions to half-open state
+- ✅ Closes on successful recovery
+
+### Manual Security Testing
+
+**Input Sanitization:**
+```bash
+# Test dangerous patterns (should be blocked/sanitized):
+pocketportal test-security "../../../etc/passwd"       # Path traversal
+pocketportal test-security "rm -rf /"                  # Dangerous command
+pocketportal test-security "DROP TABLE users"          # SQL injection
+```
+
+**Rate Limiting:**
+```bash
+# Send rapid requests (should trigger rate limit):
+for i in {1..50}; do pocketportal query "test $i"; done
+```
+
+**Circuit Breaker:**
+```bash
+# Check circuit state:
+pocketportal health-check --verbose
+```
+
+---
+
+## Performance Impact
+
+All fixes designed for minimal performance overhead:
+
+| Fix | Performance Impact | Notes |
+|-----|-------------------|-------|
+| Atomic Writes | ~1-2ms overhead | One-time cost per save operation |
+| Rate Limiter Persistence | ~0.5-1ms overhead | Amortized across requests |
+| Circuit Breaker | <0.1ms overhead | **Reduces** total latency by skipping failures |
+| Input Sanitization | ~0.2-0.5ms overhead | Pattern matching on input strings |
+
+**Net Result:** Improved overall performance due to circuit breaker preventing timeout waste
+
+---
+
+## Security Principles
+
+PocketPortal implements defense-in-depth security:
 
 ### Before Fixes
 - ❌ Data could be lost/corrupted on crash
-- ❌ Rate limits could be bypassed
-- ❌ Failed backends caused slowdowns
+- ❌ Rate limits could be bypassed via restarts
+- ❌ Failed backends caused cascading slowdowns
+- ❌ User input not sanitized (v3.x critical issue)
 
 ### After Fixes
-- ✅ Data integrity guaranteed
-- ✅ Rate limits enforced across restarts
-- ✅ Failed backends isolated automatically
-- ✅ All state changes are atomic
+- ✅ **Data Integrity Guaranteed**: Atomic writes, automatic backups
+- ✅ **Rate Limits Enforced**: Persistent across restarts
+- ✅ **Failed Backends Isolated**: Circuit breaker auto-recovery
+- ✅ **All State Changes Atomic**: No partial updates
+- ✅ **Input Sanitization**: Defense against injection attacks
+- ✅ **Structured Exception Handling**: Type-safe error management
+
+### Standards Alignment
+
+- **OWASP Top 10**: Addresses A03:2021 (Injection)
+- **CWE-78**: Command injection prevention
+- **CWE-22**: Path traversal prevention
+- **CWE-89**: SQL injection prevention
+- **GDPR Compliant**: Local processing, no data leakage
+- **POSIX Standards**: Atomic operations for file integrity
+
+---
+
+## Migration Notes
+
+### For v4.x Deployments
+
+All fixes are **automatically integrated** — no manual migration required:
+
+1. **Atomic Writes**: Apply on next save (existing data readable)
+2. **Rate Limiter Persistence**: Starts with clean state, persists going forward
+3. **Circuit Breaker**: Automatically active in execution engine
+4. **Input Sanitization**: Integrated in all interface implementations
+
+### Configuration
+
+**`.env` Settings:**
+```bash
+# Rate Limiting
+RATE_LIMIT_REQUESTS_PER_MINUTE=30
+RATE_LIMIT_WINDOW=60
+RATE_LIMIT_PERSIST_PATH=data/rate_limits.json
+
+# Circuit Breaker
+CIRCUIT_BREAKER_THRESHOLD=3
+CIRCUIT_BREAKER_TIMEOUT=60
+CIRCUIT_BREAKER_HALF_OPEN_CALLS=1
+
+# Security
+ENABLE_INPUT_SANITIZATION=true
+SANITIZATION_LOG_WARNINGS=true
+```
 
 ---
 
 ## Future Enhancements
 
-Potential improvements for consideration:
+Potential improvements under consideration:
 
-1. **Knowledge Base**:
-   - Add write-ahead logging (WAL)
-   - Implement incremental backups
-   - Add compression for large datasets
+### Knowledge Base
+- Write-ahead logging (WAL) for transaction safety
+- Incremental backups instead of full copies
+- Compression for large datasets
 
-2. **Rate Limiter**:
-   - Distributed rate limiting (Redis)
-   - Per-endpoint granularity
-   - Dynamic limit adjustment
+### Rate Limiter
+- Distributed rate limiting (Redis backend)
+- Per-endpoint and per-tool granularity
+- Dynamic limit adjustment based on user reputation
 
-3. **Circuit Breaker**:
-   - Metrics and alerting integration
-   - Adaptive thresholds based on SLA
-   - Circuit state persistence (survive restarts)
+### Circuit Breaker
+- OpenTelemetry integration for metrics/alerting
+- Adaptive thresholds based on SLA requirements
+- Circuit state persistence (survive process restarts)
 
----
-
-## References
-
-- **Atomic Writes**: POSIX atomic operations
-- **Circuit Breaker Pattern**: Martin Fowler's Circuit Breaker
-- **Rate Limiting**: Token Bucket / Sliding Window algorithms
+### Input Sanitization
+- Machine learning-based anomaly detection
+- Context-aware sanitization rules
+- Configurable severity levels per pattern
 
 ---
 
-**Status**: ✅ All fixes implemented and tested
-**Date**: 2025-12-17
-**Version**: 1.0.0
+## References & Further Reading
+
+- **Atomic Writes**: [POSIX Atomic Operations](https://pubs.opengroup.org/onlinepubs/9699919799/)
+- **Circuit Breaker Pattern**: [Martin Fowler's Circuit Breaker](https://martinfowler.com/bliki/CircuitBreaker.html)
+- **Rate Limiting Algorithms**: Token Bucket, Sliding Window, Leaky Bucket
+- **OWASP Top 10**: [Injection Prevention](https://owasp.org/Top10/A03_2021-Injection/)
+- **Security Best Practices**: [CWE Top 25](https://cwe.mitre.org/top25/)
+
+---
+
+## Related Documentation
+
+- **Architecture Guide**: [docs/architecture.md](../architecture.md)
+- **Setup Guide**: [docs/setup.md](../setup.md)
+- **Testing Guide**: [docs/TESTING.md](../TESTING.md)
+- **Changelog**: [CHANGELOG.md](../../CHANGELOG.md)
+- **Migration Guide**: [docs/archive/MIGRATION_TO_4.0.md](../archive/MIGRATION_TO_4.0.md)
+
+---
+
+## Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| **4.7.4** | 2025-12-18 | Documentation consolidation (this document created as SSOT) |
+| **4.6.0** | 2025-12-17 | Circuit breaker pattern implemented |
+| **4.5.1** | 2025-12-17 | Interface consolidation, error codes |
+| **4.4.1** | 2025-12-17 | Atomic writes, persistent rate limiting |
+| **3.0.1** | 2025-12-17 | Security module integration fix (v3.x legacy) |
+| **3.0.0** | 2025-12-17 | Initial v3.x release (deprecated, replaced by v4.x) |
+
+---
+
+**Status:** ✅ All fixes implemented and tested
+**Governance:** Single Source of Truth (SSOT) for security documentation
+**License:** MIT
+**Maintained By:** PocketPortal Development Team
