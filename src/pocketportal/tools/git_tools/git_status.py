@@ -7,7 +7,7 @@ import logging
 from typing import Dict, Any
 from pathlib import Path
 
-from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
 
 logger = logging.getLogger(__name__)
 
@@ -25,15 +25,16 @@ class GitStatusTool(BaseTool):
         return ToolMetadata(
             name="git_status",
             description="Check the status of a Git repository",
-            category=ToolCategory.DEVELOPMENT,
+            category=ToolCategory.DEV,
             requires_confirmation=False,
-            parameters={
-                "repo_path": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Path to repository (default: current directory)"
-                }
-            }
+            parameters=[
+                ToolParameter(
+                    name="repo_path",
+                    param_type="string",
+                    description="Path to repository (default: current directory)",
+                    required=False
+                )
+            ]
         )
 
     async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:

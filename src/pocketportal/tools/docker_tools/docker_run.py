@@ -7,7 +7,7 @@ import logging
 from typing import Dict, Any
 from pathlib import Path
 
-from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
 
 logger = logging.getLogger(__name__)
 
@@ -29,45 +29,52 @@ class DockerRunTool(BaseTool):
         return ToolMetadata(
             name="docker_run",
             description="Run a Docker container from an image",
-            category=ToolCategory.SYSTEM,
+            category=ToolCategory.DEV,
             requires_confirmation=True,  # Running containers affects system
-            parameters={
-                "image": {
-                    "type": "string",
-                    "required": True,
-                    "description": "Docker image name (e.g., nginx:latest)"
-                },
-                "name": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Container name"
-                },
-                "ports": {
-                    "type": "object",
-                    "required": False,
-                    "description": "Port mappings (e.g., {'80/tcp': 8080})"
-                },
-                "environment": {
-                    "type": "object",
-                    "required": False,
-                    "description": "Environment variables"
-                },
-                "volumes": {
-                    "type": "object",
-                    "required": False,
-                    "description": "Volume mappings"
-                },
-                "detach": {
-                    "type": "boolean",
-                    "required": False,
-                    "description": "Run in background (default: True)"
-                },
-                "remove": {
-                    "type": "boolean",
-                    "required": False,
-                    "description": "Auto-remove when stopped (default: False)"
-                }
-            }
+            parameters=[
+                ToolParameter(
+                    name="image",
+                    param_type="string",
+                    description="Docker image name (e.g., nginx:latest)",
+                    required=True
+                ),
+                ToolParameter(
+                    name="name",
+                    param_type="string",
+                    description="Container name",
+                    required=False
+                ),
+                ToolParameter(
+                    name="ports",
+                    param_type="object",
+                    description="Port mappings (e.g., {'80/tcp': 8080})",
+                    required=False
+                ),
+                ToolParameter(
+                    name="environment",
+                    param_type="object",
+                    description="Environment variables",
+                    required=False
+                ),
+                ToolParameter(
+                    name="volumes",
+                    param_type="object",
+                    description="Volume mappings",
+                    required=False
+                ),
+                ToolParameter(
+                    name="detach",
+                    param_type="bool",
+                    description="Run in background (default: True)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="remove",
+                    param_type="bool",
+                    description="Auto-remove when stopped (default: False)",
+                    required=False
+                )
+            ]
         )
 
     async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:

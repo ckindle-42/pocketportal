@@ -96,6 +96,7 @@ automation = [
     "schedule==1.2.0",
     "apscheduler==3.10.4",
     "croniter==2.0.1",
+    "psutil==5.9.6",
 ]
 
 # Browser automation

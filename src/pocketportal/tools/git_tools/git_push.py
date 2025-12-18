@@ -7,7 +7,7 @@ import logging
 from typing import Dict, Any
 from pathlib import Path
 
-from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
 
 logger = logging.getLogger(__name__)
 
@@ -25,35 +25,40 @@ class GitPushTool(BaseTool):
         return ToolMetadata(
             name="git_push",
             description="Push commits to remote Git repository",
-            category=ToolCategory.DEVELOPMENT,
+            category=ToolCategory.DEV,
             requires_confirmation=True,  # Pushes affect remote
-            parameters={
-                "repo_path": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Path to repository (default: current directory)"
-                },
-                "remote": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Remote name (default: origin)"
-                },
-                "branch": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Branch to push (default: current branch)"
-                },
-                "force": {
-                    "type": "boolean",
-                    "required": False,
-                    "description": "Force push (DANGEROUS - use with caution)"
-                },
-                "set_upstream": {
-                    "type": "boolean",
-                    "required": False,
-                    "description": "Set upstream tracking (default: False)"
-                }
-            }
+            parameters=[
+                ToolParameter(
+                    name="repo_path",
+                    param_type="string",
+                    description="Path to repository (default: current directory)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="remote",
+                    param_type="string",
+                    description="Remote name (default: origin)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="branch",
+                    param_type="string",
+                    description="Branch to push (default: current branch)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="force",
+                    param_type="bool",
+                    description="Force push (DANGEROUS - use with caution)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="set_upstream",
+                    param_type="bool",
+                    description="Set upstream tracking (default: False)",
+                    required=False
+                )
+            ]
         )
 
     async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:

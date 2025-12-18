@@ -7,7 +7,7 @@ import logging
 from typing import Dict, Any
 from pathlib import Path
 
-from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
 
 logger = logging.getLogger(__name__)
 
@@ -25,30 +25,34 @@ class GitBranchTool(BaseTool):
         return ToolMetadata(
             name="git_branch",
             description="List, create, delete, or switch Git branches",
-            category=ToolCategory.DEVELOPMENT,
+            category=ToolCategory.DEV,
             requires_confirmation=False,
-            parameters={
-                "repo_path": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Path to repository (default: current directory)"
-                },
-                "action": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Action: list, create, delete, checkout (default: list)"
-                },
-                "branch_name": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Branch name (for create/delete/checkout)"
-                },
-                "force": {
-                    "type": "boolean",
-                    "required": False,
-                    "description": "Force operation (for delete)"
-                }
-            }
+            parameters=[
+                ToolParameter(
+                    name="repo_path",
+                    param_type="string",
+                    description="Path to repository (default: current directory)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="action",
+                    param_type="string",
+                    description="Action: list, create, delete, checkout (default: list)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="branch_name",
+                    param_type="string",
+                    description="Branch name (for create/delete/checkout)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="force",
+                    param_type="bool",
+                    description="Force operation (for delete)",
+                    required=False
+                )
+            ]
         )
 
     async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:

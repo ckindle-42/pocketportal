@@ -8,7 +8,7 @@ from typing import Dict, Any
 from pathlib import Path
 from datetime import datetime
 
-from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
 
 logger = logging.getLogger(__name__)
 
@@ -26,35 +26,40 @@ class GitLogTool(BaseTool):
         return ToolMetadata(
             name="git_log",
             description="View Git commit history with various options",
-            category=ToolCategory.DEVELOPMENT,
+            category=ToolCategory.DEV,
             requires_confirmation=False,
-            parameters={
-                "repo_path": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Path to repository (default: current directory)"
-                },
-                "max_count": {
-                    "type": "integer",
-                    "required": False,
-                    "description": "Maximum number of commits to show (default: 10)"
-                },
-                "author": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Filter by author name"
-                },
-                "since": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Show commits since date (e.g., '2 weeks ago')"
-                },
-                "file_path": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Show commits affecting specific file"
-                }
-            }
+            parameters=[
+                ToolParameter(
+                    name="repo_path",
+                    param_type="string",
+                    description="Path to repository (default: current directory)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="max_count",
+                    param_type="int",
+                    description="Maximum number of commits to show (default: 10)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="author",
+                    param_type="string",
+                    description="Filter by author name",
+                    required=False
+                ),
+                ToolParameter(
+                    name="since",
+                    param_type="string",
+                    description="Show commits since date (e.g., '2 weeks ago')",
+                    required=False
+                ),
+                ToolParameter(
+                    name="file_path",
+                    param_type="string",
+                    description="Show commits affecting specific file",
+                    required=False
+                )
+            ]
         )
 
     async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:

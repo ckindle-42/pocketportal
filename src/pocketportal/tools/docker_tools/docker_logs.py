@@ -7,7 +7,7 @@ import logging
 from typing import Dict, Any
 from pathlib import Path
 
-from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
 
 logger = logging.getLogger(__name__)
 
@@ -29,30 +29,34 @@ class DockerLogsTool(BaseTool):
         return ToolMetadata(
             name="docker_logs",
             description="View logs from a Docker container",
-            category=ToolCategory.SYSTEM,
+            category=ToolCategory.DEV,
             requires_confirmation=False,
-            parameters={
-                "container": {
-                    "type": "string",
-                    "required": True,
-                    "description": "Container ID or name"
-                },
-                "tail": {
-                    "type": "integer",
-                    "required": False,
-                    "description": "Number of lines to show from end (default: 100)"
-                },
-                "follow": {
-                    "type": "boolean",
-                    "required": False,
-                    "description": "Follow log output (default: False)"
-                },
-                "timestamps": {
-                    "type": "boolean",
-                    "required": False,
-                    "description": "Show timestamps (default: False)"
-                }
-            }
+            parameters=[
+                ToolParameter(
+                    name="container",
+                    param_type="string",
+                    description="Container ID or name",
+                    required=True
+                ),
+                ToolParameter(
+                    name="tail",
+                    param_type="int",
+                    description="Number of lines to show from end (default: 100)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="follow",
+                    param_type="bool",
+                    description="Follow log output (default: False)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="timestamps",
+                    param_type="bool",
+                    description="Show timestamps (default: False)",
+                    required=False
+                )
+            ]
         )
 
     async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:

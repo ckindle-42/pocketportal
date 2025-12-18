@@ -7,11 +7,15 @@ import logging
 from typing import Dict, Any
 from pathlib import Path
 
-from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
 
 logger = logging.getLogger(__name__)
 
-import psutil
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
 
 
 class SystemStatsTool(BaseTool):
@@ -21,21 +25,25 @@ class SystemStatsTool(BaseTool):
         return ToolMetadata(
             name="system_stats",
             description="Get system resource usage (CPU, RAM, disk)",
-            category=ToolCategory.SYSTEM,
-            parameters={
-                "detailed": {
-                    "type": "boolean",
-                    "required": False,
-                    "description": "Include detailed per-core/disk stats"
-                }
-            }
+            category=ToolCategory.UTILITY,
+            parameters=[
+                ToolParameter(
+                    name="detailed",
+                    param_type="bool",
+                    description="Include detailed per-core/disk stats",
+                    required=False
+                )
+            ]
         )
-    
+
     async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """Get system stats"""
-        
+
+        if not PSUTIL_AVAILABLE:
+            return self._error_response("psutil not installed. Run: pip install psutil or pip install pocketportal[automation]")
+
         detailed = parameters.get("detailed", False)
-        
+
         try:
             # CPU
             cpu_percent = psutil.cpu_percent(interval=1)

@@ -7,7 +7,7 @@ import logging
 from typing import Dict, Any
 from pathlib import Path
 
-from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
 
 logger = logging.getLogger(__name__)
 
@@ -25,30 +25,34 @@ class GitCloneTool(BaseTool):
         return ToolMetadata(
             name="git_clone",
             description="Clone a Git repository to local machine",
-            category=ToolCategory.DEVELOPMENT,
+            category=ToolCategory.DEV,
             requires_confirmation=True,
-            parameters={
-                "url": {
-                    "type": "string",
-                    "required": True,
-                    "description": "Repository URL (HTTPS or SSH)"
-                },
-                "destination": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Destination directory (default: repo name)"
-                },
-                "branch": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Branch to clone (default: default branch)"
-                },
-                "depth": {
-                    "type": "integer",
-                    "required": False,
-                    "description": "Clone depth for shallow clone"
-                }
-            }
+            parameters=[
+                ToolParameter(
+                    name="url",
+                    param_type="string",
+                    description="Repository URL (HTTPS or SSH)",
+                    required=True
+                ),
+                ToolParameter(
+                    name="destination",
+                    param_type="string",
+                    description="Destination directory (default: repo name)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="branch",
+                    param_type="string",
+                    description="Branch to clone (default: default branch)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="depth",
+                    param_type="int",
+                    description="Clone depth for shallow clone",
+                    required=False
+                )
+            ]
         )
     
     async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:

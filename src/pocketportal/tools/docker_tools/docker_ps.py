@@ -7,7 +7,7 @@ import logging
 from typing import Dict, Any
 from pathlib import Path
 
-from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
 
 logger = logging.getLogger(__name__)
 
@@ -29,19 +29,21 @@ class DockerPSTool(BaseTool):
         return ToolMetadata(
             name="docker_ps",
             description="List Docker containers",
-            category=ToolCategory.SYSTEM,
-            parameters={
-                "all": {
-                    "type": "boolean",
-                    "required": False,
-                    "description": "Show all containers (default: running only)"
-                },
-                "filters": {
-                    "type": "object",
-                    "required": False,
-                    "description": "Filter containers"
-                }
-            }
+            category=ToolCategory.DEV,
+            parameters=[
+                ToolParameter(
+                    name="all",
+                    param_type="bool",
+                    description="Show all containers (default: running only)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="filters",
+                    param_type="object",
+                    description="Filter containers",
+                    required=False
+                )
+            ]
         )
     
     async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:

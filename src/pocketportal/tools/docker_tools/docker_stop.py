@@ -7,7 +7,7 @@ import logging
 from typing import Dict, Any
 from pathlib import Path
 
-from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
 
 logger = logging.getLogger(__name__)
 
@@ -29,25 +29,28 @@ class DockerStopTool(BaseTool):
         return ToolMetadata(
             name="docker_stop",
             description="Stop one or more Docker containers",
-            category=ToolCategory.SYSTEM,
+            category=ToolCategory.DEV,
             requires_confirmation=True,  # Stopping affects running services
-            parameters={
-                "containers": {
-                    "type": "list",
-                    "required": True,
-                    "description": "Container IDs or names to stop"
-                },
-                "timeout": {
-                    "type": "integer",
-                    "required": False,
-                    "description": "Seconds to wait before killing (default: 10)"
-                },
-                "remove": {
-                    "type": "boolean",
-                    "required": False,
-                    "description": "Remove containers after stopping (default: False)"
-                }
-            }
+            parameters=[
+                ToolParameter(
+                    name="containers",
+                    param_type="list",
+                    description="Container IDs or names to stop",
+                    required=True
+                ),
+                ToolParameter(
+                    name="timeout",
+                    param_type="int",
+                    description="Seconds to wait before killing (default: 10)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="remove",
+                    param_type="bool",
+                    description="Remove containers after stopping (default: False)",
+                    required=False
+                )
+            ]
         )
 
     async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:

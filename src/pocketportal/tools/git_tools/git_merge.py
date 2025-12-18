@@ -7,7 +7,7 @@ import logging
 from typing import Dict, Any
 from pathlib import Path
 
-from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory
+from pocketportal.core.interfaces.tool import BaseTool, ToolMetadata, ToolCategory, ToolParameter
 
 logger = logging.getLogger(__name__)
 
@@ -25,30 +25,34 @@ class GitMergeTool(BaseTool):
         return ToolMetadata(
             name="git_merge",
             description="Merge one Git branch into another",
-            category=ToolCategory.DEVELOPMENT,
+            category=ToolCategory.DEV,
             requires_confirmation=True,  # Merges modify history
-            parameters={
-                "repo_path": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Path to repository (default: current directory)"
-                },
-                "branch": {
-                    "type": "string",
-                    "required": True,
-                    "description": "Branch to merge into current branch"
-                },
-                "no_ff": {
-                    "type": "boolean",
-                    "required": False,
-                    "description": "Create merge commit even if fast-forward possible"
-                },
-                "message": {
-                    "type": "string",
-                    "required": False,
-                    "description": "Custom merge commit message"
-                }
-            }
+            parameters=[
+                ToolParameter(
+                    name="repo_path",
+                    param_type="string",
+                    description="Path to repository (default: current directory)",
+                    required=False
+                ),
+                ToolParameter(
+                    name="branch",
+                    param_type="string",
+                    description="Branch to merge into current branch",
+                    required=True
+                ),
+                ToolParameter(
+                    name="no_ff",
+                    param_type="bool",
+                    description="Create merge commit even if fast-forward possible",
+                    required=False
+                ),
+                ToolParameter(
+                    name="message",
+                    param_type="string",
+                    description="Custom merge commit message",
+                    required=False
+                )
+            ]
         )
 
     async def execute(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
