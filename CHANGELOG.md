@@ -5,6 +5,59 @@ All notable changes to PocketPortal will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.1] - 2025-12-18
+
+### Added
+- **Version SSOT (Single Source of Truth)**: All version references now dynamically fetch from `pyproject.toml` using `importlib.metadata`
+  - Eliminates version drift across `__init__.py`, `cli.py`, and documentation
+  - Fallback to '0.0.0-dev' for development environments
+
+- **ToolManifest Schema**: Comprehensive tool metadata system (`tools/manifest.py`)
+  - `TrustLevel` enum: CORE (0), VERIFIED (1), UNTRUSTED (2)
+  - `SecurityScope` enum: READ_ONLY, READ_WRITE, SYSTEM_MODIFY, NETWORK_ACCESS, PRIVILEGED
+  - `ResourceProfile` enum: LIGHTWEIGHT, NORMAL, CPU_INTENSIVE, IO_INTENSIVE, NETWORK_INTENSIVE
+  - Automatic security policy enforcement (UNTRUSTED tools must use sandbox)
+  - Helper functions: `create_core_manifest()`, `create_plugin_manifest()`, `create_untrusted_manifest()`
+
+- **Dead Letter Queue (DLQ) CLI Commands**: Full job queue management via CLI
+  - `pocketportal queue list [--status STATUS] [--limit N]`: List jobs by status
+  - `pocketportal queue failed [--limit N]`: View failed jobs (DLQ)
+  - `pocketportal queue retry <job_id>`: Retry a failed job
+  - `pocketportal queue stats`: Show queue statistics
+  - `pocketportal queue cleanup [--older-than-hours N]`: Clean up old jobs
+
+- **Configuration Schemas**: Pydantic schemas for type-safe configuration (`config/schemas/`)
+  - `SettingsSchema`: Root configuration with validation
+  - `InterfaceConfig`, `SecurityConfig`, `LLMConfig`, `ObservabilityConfig`, `JobQueueConfig`
+  - Strict validation with `extra = "forbid"` to reject unknown fields
+  - Self-documenting configuration structure
+
+### Changed
+- **MCP Migration Completed**: Removed deprecated `tools/mcp_tools/` directory
+  - All MCP code now in `protocols/mcp/` (migration from v4.4.0)
+  - No more split logic or ambiguous imports
+
+- **Test Organization**: Reorganized test suite into `tests/unit/` and `tests/integration/`
+  - All current tests moved to `tests/unit/`
+  - Created `tests/integration/README.md` with guidelines for integration tests
+  - Enforces distinction between fast unit tests and slow integration tests
+
+- **Documentation Cleanup**: Archived old strategic plans
+  - `docs/STRATEGIC_PLAN_V4.3.md` → `docs/archive/STRATEGIC_PLAN_V4.3_EXECUTED.md`
+  - Reduces cognitive load by removing completed planning documents from active docs
+
+### Fixed
+- **Version Drift**: Fixed inconsistent version numbers across codebase
+  - `pocketportal/__init__.py` was 4.3.0 (now dynamically fetched)
+  - `pocketportal/cli.py` was 4.1.1 (now dynamically fetched)
+  - All now reference `pyproject.toml` as single source
+
+### Technical Debt Reduction
+- Removed redundant MCP implementation from `tools/`
+- Standardized test structure for better maintainability
+- Created foundation for stricter configuration validation
+- Established tool manifest pattern for future security enhancements
+
 ## [4.4.0] - 2025-12-17
 
 ### Added - Phase 2: Async Job Queue

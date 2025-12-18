@@ -1,12 +1,12 @@
-# 🚀 PocketPortal 4.4.0 - One-for-All AI Agent Platform
+# 🚀 PocketPortal 4.4.1 - One-for-All AI Agent Platform
 
 **Privacy-First, Interface-Agnostic AI Agent with Async Queue, Protocol Mesh, and Full Observability**
 
 ---
 
-## 🎉 PocketPortal 4.4.0 - Production-Ready Enterprise Platform
+## 🎉 PocketPortal 4.4.1 - Production-Ready Enterprise Platform
 
-**PocketPortal 4.4.0** is a production-ready, extensible AI agent platform with **async job queues**, **bidirectional MCP support**, **universal resource resolution**, and **full observability** that makes it truly interface-agnostic and production-grade.
+**PocketPortal 4.4.1** is a production-ready, extensible AI agent platform with **async job queues**, **bidirectional MCP support**, **universal resource resolution**, and **full observability** that makes it truly interface-agnostic and production-grade.
 
 ### Evolution from 3.x to 4.4.0
 
@@ -16,6 +16,7 @@ v4.0:  Any Interface → Security → AgentCore → Router → LLM
 v4.2:  + DAO Pattern + Dynamic Discovery + Lazy Loading
 v4.3:  + Plugin Ecosystem + Observability + Testing Infrastructure
 v4.4:  + Async Job Queue + MCP Protocol Mesh + Full Observability Stack
+v4.4.1: + Operational Cleanup + Version SSOT + ToolManifest + DLQ CLI
 ```
 
 **Core Improvements (4.0-4.4):**
@@ -208,7 +209,7 @@ Previous versions of PocketPortal (v3.x) used a monolithic architecture. Migrati
 
 ---
 
-**Version:** 4.4.0
+**Version:** 4.4.1
 **Release Date:** December 2025
 **License:** MIT
 

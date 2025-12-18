@@ -1,6 +1,6 @@
 """
-PocketPortal 4.3 - One-for-All AI Agent Platform
-=================================================
+PocketPortal - One-for-All AI Agent Platform
+==============================================
 
 A production-ready AI agent platform with plugin architecture, async job queues,
 and universal resource access.
@@ -40,7 +40,14 @@ Usage:
     web = WebInterface(secure_agent, config)
 """
 
-__version__ = '4.3.0'
+# Version is dynamically fetched from pyproject.toml (Single Source of Truth)
+try:
+    from importlib import metadata
+    __version__ = metadata.version('pocketportal')
+except Exception:
+    # Fallback for development environments
+    __version__ = '0.0.0-dev'
+
 __author__ = 'PocketPortal Team'
 
 # Core components

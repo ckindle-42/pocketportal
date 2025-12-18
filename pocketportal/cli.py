@@ -14,8 +14,12 @@ from pathlib import Path
 from typing import Optional
 import signal
 
-# Version info
-__version__ = "4.1.1"
+# Version is dynamically fetched from pyproject.toml (Single Source of Truth)
+try:
+    from importlib import metadata
+    __version__ = metadata.version('pocketportal')
+except Exception:
+    __version__ = '0.0.0-dev'
 
 logger = logging.getLogger(__name__)
 
@@ -442,6 +446,178 @@ def cmd_version(args):
     print("Privacy-first, interface-agnostic AI agent platform")
 
 
+def cmd_queue_list(args):
+    """Handle 'queue list' command"""
+    setup_logging(args.log_level, args.log_format)
+
+    try:
+        from pocketportal.persistence.inmemory_impl import InMemoryJobRepository
+        from pocketportal.persistence.repositories import JobStatus
+
+        # In a real implementation, this would use the configured repository
+        # For now, we show how it would work with the in-memory implementation
+        repo = InMemoryJobRepository()
+
+        # List jobs
+        jobs = asyncio.run(repo.list_jobs(
+            status=args.status,
+            limit=args.limit
+        ))
+
+        if not jobs:
+            print("No jobs found.")
+            return
+
+        print(f"\n{'='*80}")
+        print(f"Jobs in Queue ({len(jobs)} total)")
+        if args.status:
+            print(f"Filtered by status: {args.status}")
+        print(f"{'='*80}\n")
+
+        for job in jobs:
+            print(f"ID: {job.id}")
+            print(f"  Type: {job.job_type}")
+            print(f"  Status: {job.status}")
+            print(f"  Priority: {job.priority}")
+            print(f"  Created: {job.created_at}")
+            if job.error:
+                print(f"  Error: {job.error}")
+            print()
+
+    except Exception as e:
+        logger.error(f"Failed to list jobs: {e}", exc_info=True)
+        sys.exit(1)
+
+
+def cmd_queue_failed(args):
+    """Handle 'queue failed' command - shortcut for listing failed jobs"""
+    setup_logging(args.log_level, args.log_format)
+
+    try:
+        from pocketportal.persistence.inmemory_impl import InMemoryJobRepository
+        from pocketportal.persistence.repositories import JobStatus
+
+        repo = InMemoryJobRepository()
+
+        # List failed jobs
+        jobs = asyncio.run(repo.list_jobs(
+            status=JobStatus.FAILED,
+            limit=args.limit
+        ))
+
+        if not jobs:
+            print("\n✓ No failed jobs in the queue (DLQ is empty)")
+            return
+
+        print(f"\n{'='*80}")
+        print(f"Dead Letter Queue (DLQ) - Failed Jobs ({len(jobs)} total)")
+        print(f"{'='*80}\n")
+
+        for job in jobs:
+            print(f"ID: {job.id}")
+            print(f"  Type: {job.job_type}")
+            print(f"  Created: {job.created_at}")
+            print(f"  Retry Count: {job.retry_count}/{job.max_retries}")
+            print(f"  Error: {job.error}")
+            print(f"  \n  Retry with: pocketportal queue retry {job.id}\n")
+
+    except Exception as e:
+        logger.error(f"Failed to list failed jobs: {e}", exc_info=True)
+        sys.exit(1)
+
+
+def cmd_queue_retry(args):
+    """Handle 'queue retry' command"""
+    setup_logging(args.log_level, args.log_format)
+
+    try:
+        from pocketportal.persistence.inmemory_impl import InMemoryJobRepository
+        from pocketportal.persistence.repositories import JobStatus
+
+        repo = InMemoryJobRepository()
+
+        # Get the job
+        job = asyncio.run(repo.get_job(args.job_id))
+
+        if not job:
+            print(f"✗ Job {args.job_id} not found")
+            sys.exit(1)
+
+        if job.status != JobStatus.FAILED:
+            print(f"✗ Job {args.job_id} is not in FAILED status (current: {job.status})")
+            sys.exit(1)
+
+        # Reset job to pending for retry
+        success = asyncio.run(repo.update_status(
+            job_id=args.job_id,
+            status=JobStatus.PENDING,
+            error=None
+        ))
+
+        if success:
+            print(f"✓ Job {args.job_id} has been requeued for retry")
+        else:
+            print(f"✗ Failed to requeue job {args.job_id}")
+            sys.exit(1)
+
+    except Exception as e:
+        logger.error(f"Failed to retry job: {e}", exc_info=True)
+        sys.exit(1)
+
+
+def cmd_queue_stats(args):
+    """Handle 'queue stats' command"""
+    setup_logging(args.log_level, args.log_format)
+
+    try:
+        from pocketportal.persistence.inmemory_impl import InMemoryJobRepository
+
+        repo = InMemoryJobRepository()
+
+        # Get statistics
+        stats = asyncio.run(repo.get_stats())
+
+        print(f"\n{'='*60}")
+        print("Job Queue Statistics")
+        print(f"{'='*60}\n")
+
+        print(f"Total Jobs: {stats.get('total_jobs', 0)}")
+        print(f"\nBy Status:")
+        print(f"  Pending:   {stats.get('pending', 0)}")
+        print(f"  Running:   {stats.get('running', 0)}")
+        print(f"  Completed: {stats.get('completed', 0)}")
+        print(f"  Failed:    {stats.get('failed', 0)}")
+        print(f"  Cancelled: {stats.get('cancelled', 0)}")
+        print(f"  Retrying:  {stats.get('retrying', 0)}")
+
+        print(f"\nBy Priority:")
+        for priority, count in stats.get('by_priority', {}).items():
+            print(f"  Priority {priority}: {count}")
+
+    except Exception as e:
+        logger.error(f"Failed to get queue stats: {e}", exc_info=True)
+        sys.exit(1)
+
+
+def cmd_queue_cleanup(args):
+    """Handle 'queue cleanup' command"""
+    setup_logging(args.log_level, args.log_format)
+
+    try:
+        from pocketportal.persistence.inmemory_impl import InMemoryJobRepository
+
+        repo = InMemoryJobRepository()
+
+        # Clean up old jobs
+        count = asyncio.run(repo.cleanup_completed(older_than_hours=args.older_than_hours))
+
+        print(f"✓ Cleaned up {count} old completed/failed jobs (older than {args.older_than_hours} hours)")
+
+    except Exception as e:
+        logger.error(f"Failed to cleanup jobs: {e}", exc_info=True)
+        sys.exit(1)
+
+
 def main():
     """Main CLI entry point"""
     parser = argparse.ArgumentParser(
@@ -522,6 +698,75 @@ def main():
         help="Verify installation and configuration"
     )
     verify_parser.set_defaults(func=cmd_verify)
+
+    # Job queue commands
+    queue_parser = subparsers.add_parser(
+        "queue",
+        help="Manage job queue (inspect, retry, cleanup)"
+    )
+    queue_subparsers = queue_parser.add_subparsers(dest="queue_command", help="Queue operations")
+
+    # queue list - List jobs
+    queue_list_parser = queue_subparsers.add_parser(
+        "list",
+        help="List jobs in the queue"
+    )
+    queue_list_parser.add_argument(
+        "--status",
+        choices=["pending", "running", "completed", "failed", "cancelled", "retrying"],
+        help="Filter by job status"
+    )
+    queue_list_parser.add_argument(
+        "--limit",
+        type=int,
+        default=20,
+        help="Maximum number of jobs to display (default: 20)"
+    )
+    queue_list_parser.set_defaults(func=cmd_queue_list)
+
+    # queue failed - List failed jobs (shortcut)
+    queue_failed_parser = queue_subparsers.add_parser(
+        "failed",
+        help="List failed jobs (DLQ - Dead Letter Queue)"
+    )
+    queue_failed_parser.add_argument(
+        "--limit",
+        type=int,
+        default=20,
+        help="Maximum number of jobs to display (default: 20)"
+    )
+    queue_failed_parser.set_defaults(func=cmd_queue_failed)
+
+    # queue retry - Retry a failed job
+    queue_retry_parser = queue_subparsers.add_parser(
+        "retry",
+        help="Retry a failed job by ID"
+    )
+    queue_retry_parser.add_argument(
+        "job_id",
+        help="Job ID to retry"
+    )
+    queue_retry_parser.set_defaults(func=cmd_queue_retry)
+
+    # queue stats - Show queue statistics
+    queue_stats_parser = queue_subparsers.add_parser(
+        "stats",
+        help="Show job queue statistics"
+    )
+    queue_stats_parser.set_defaults(func=cmd_queue_stats)
+
+    # queue cleanup - Clean up old completed/failed jobs
+    queue_cleanup_parser = queue_subparsers.add_parser(
+        "cleanup",
+        help="Clean up old completed/failed jobs"
+    )
+    queue_cleanup_parser.add_argument(
+        "--older-than-hours",
+        type=int,
+        default=24,
+        help="Remove jobs older than N hours (default: 24)"
+    )
+    queue_cleanup_parser.set_defaults(func=cmd_queue_cleanup)
 
     # Version command (also handled by --version)
     version_parser = subparsers.add_parser(
