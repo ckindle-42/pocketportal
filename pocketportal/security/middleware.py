@@ -11,8 +11,8 @@ from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 
 from pocketportal.security.security_module import InputSanitizer, RateLimiter
-from .exceptions import PolicyViolationError, RateLimitError, ValidationError
-from .structured_logger import get_logger
+from pocketportal.core.exceptions import PolicyViolationError, RateLimitError, ValidationError
+from pocketportal.core.structured_logger import get_logger
 
 logger = get_logger('SecurityMiddleware')
 

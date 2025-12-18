@@ -71,7 +71,8 @@ async def start_interface(
             logger.info("Using default/environment configuration")
 
         # Import core components
-        from pocketportal.core import create_agent_core, SecurityMiddleware
+        from pocketportal.core import create_agent_core
+        from pocketportal.security import SecurityMiddleware
         from pocketportal.interfaces import InterfaceManager
 
         # Create agent core

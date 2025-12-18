@@ -5,6 +5,100 @@ All notable changes to PocketPortal will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.5.0] - 2025-12-18
+
+### Added - Project Structure & Hygiene
+- **Cleaned Root Directory**: Moved standalone test files to `scripts/verification/`
+  - Relocated `test_phase2_standalone.py`, `test_phase3_standalone.py`, `test_phase4_standalone.py`
+  - Root directory now only contains configuration files and package source
+  - Professional appearance matching the architecture quality
+
+### Added - Architectural Refinements
+- **Modular Interfaces**: Converted flat interfaces into sub-packages
+  - `interfaces/telegram/`: Telegram bot interface and renderers
+  - `interfaces/web/`: FastAPI + WebSocket web interface
+  - Co-locates interface-specific assets within their packages
+  - Better organization and future-proofing
+
+- **EventBroker Interface**: Abstract interface for event bus implementations (`core/event_broker.py`)
+  - `EventBroker` ABC following DAO pattern
+  - `MemoryEventBroker` for single-process deployments (default)
+  - `create_event_broker()` factory function
+  - Prepares for `RedisEventBroker` for distributed deployments
+  - Swappable backends aligned with "Swappable Backends" philosophy
+
+- **Lifecycle Module**: Bootstrap and runtime orchestration (`lifecycle.py`)
+  - `Runtime` class for application lifecycle management
+  - Handles config loading, DI container initialization, event bus setup
+  - OS signal handling (SIGINT/SIGTERM) for graceful shutdown
+  - `run_with_lifecycle()` helper for clean application startup
+  - Decouples lifecycle concerns from Engine (Engine now purely processes I/O)
+
+### Added - Capabilities & Tools
+- **Approval Protocol**: Universal Human-in-the-Loop (`protocols/approval/`)
+  - `ApprovalProtocol` for interface-agnostic approval flows
+  - `ApprovalRequest` and `ApprovalDecision` data models
+  - Event-driven approval (agent → event → interface → decision)
+  - Works with any interface (Telegram buttons, Web UI, CLI prompts)
+  - Replaces interface-specific approval logic
+
+- **SessionManager**: Stateful code execution (`tools/dev_tools/session_manager.py`)
+  - Persistent execution environments per chat_id
+  - Variables persist between executions (like Jupyter/ChatGPT Code Interpreter)
+  - Session isolation (different users don't share state)
+  - Automatic cleanup of idle sessions
+  - Support for Docker containers and Jupyter kernels
+  - Prepares PocketPortal for true "One-for-All" stateful interactions
+
+- **MCP Security Policy**: Granular access control (`protocols/mcp/security_policy.py`)
+  - `MCPSecurityPolicy` for controlling MCP server permissions
+  - `FileSystemPolicy`: Restrict filesystem access to specific paths
+  - `NetworkPolicy`: Control network access by domain and port
+  - `ResourcePolicy`: Limit CPU, memory, disk usage
+  - Predefined policies: `SANDBOXED_POLICY`, `TRUSTED_POLICY`, `UNRESTRICTED_POLICY`
+  - Prevents MCP servers from having unrestricted system access
+
+### Added - Operational Excellence
+- **Cost Tracking Middleware**: Business metrics for LLM usage (`middleware/cost_tracker.py`)
+  - `CostTracker` calculates estimated costs per interaction
+  - Tracks costs per user, per model
+  - Model pricing database (OpenAI, Anthropic Claude, local models)
+  - Prevents "bill shock" in enterprise deployments
+  - Exportable cost summaries
+
+- **Secret Management Provider**: Abstract secret loading (`config/secrets.py`)
+  - `SecretProvider` ABC for multiple backends
+  - `EnvSecretProvider` for environment variables (default)
+  - `DockerSecretProvider` for Docker Swarm/Compose secrets
+  - `CompositeSecretProvider` to try multiple providers
+  - Production-ready secret management (no hardcoded `os.getenv`)
+
+### Changed - Structure Consolidation
+- **Security Consolidation**: Moved `core/security_middleware.py` → `security/middleware.py`
+  - Consolidates all security logic in `security/` package
+  - Reduces surface area of `core/` package
+  - Core now strictly handles orchestration (Engine, Context, Events)
+
+- **Media Tools Organization**: Moved `audio_tools/` → `media_tools/audio/`
+  - Future-proofs for video and image processing tools
+  - `media_tools/audio/`, `media_tools/video/` (future), `media_tools/image/` (future)
+  - Cleaner taxonomy for media processing
+
+### Changed - Documentation Updates
+- **README.md**: Updated project structure diagram
+  - Removed references to deprecated `mcp_tools/` (now in `protocols/mcp/`)
+  - Added new packages: `protocols/approval/`, `lifecycle.py`, `middleware/`
+  - Reflects actual v4.5.0 structure
+
+### Technical Improvements
+- All new modules follow established patterns:
+  - DAO pattern for swappable backends (EventBroker, SecretProvider)
+  - Abstract interfaces for extensibility
+  - Factory functions for instantiation
+  - Comprehensive docstrings and examples
+- Added `distributed` optional dependency group (Redis support for future EventBroker)
+- Updated all imports to reflect new package structure
+
 ## [4.4.1] - 2025-12-18
 
 ### Added
