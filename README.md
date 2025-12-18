@@ -105,9 +105,11 @@ pocketportal/
 │   ├── lifecycle.py              # Bootstrap & runtime management
 │   └── __init__.py               # Package exports & version
 │
-├── tests/                         # Test suite (unit & integration)
-├── scripts/                       # Development scripts
-│   └── verification/             # Manual verification tests
+├── tests/                         # Test suite
+│   ├── unit/                     # Fast unit tests
+│   ├── integration/              # Integration tests
+│   └── e2e/                      # End-to-end tests
+├── scripts/                       # Utility scripts (optional)
 ├── docs/                          # Documentation
 │   ├── architecture.md           # Architecture documentation
 │   ├── setup.md                  # Installation guide

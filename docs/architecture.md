@@ -22,12 +22,104 @@ PocketPortal is a production-grade, interface-agnostic AI agent platform with mo
 
 ## Table of Contents
 
-1. [Project Structure](#project-structure)
-2. [Core Architecture](#core-architecture)
-3. [Design Patterns](#design-patterns)
-4. [Key Components](#key-components)
-5. [Data Flow](#data-flow)
-6. [Extensibility](#extensibility)
+1. [Conceptual Boundaries](#conceptual-boundaries)
+2. [Project Structure](#project-structure)
+3. [Core Architecture](#core-architecture)
+4. [Design Patterns](#design-patterns)
+5. [Key Components](#key-components)
+6. [Data Flow](#data-flow)
+7. [Extensibility](#extensibility)
+
+---
+
+## Conceptual Boundaries
+
+PocketPortal uses a precise taxonomy to classify components and guide contributors in adding new functionality. Understanding these distinctions is critical for maintaining architectural integrity.
+
+### Tool
+**Definition:** An atomic, single-purpose action that performs a discrete task and returns a result.
+
+**Characteristics:**
+- Self-contained execution (no persistent state between invocations)
+- Accepts parameters, performs operation, returns result
+- Examples: Generate QR code, compress file, transcribe audio, query CSV
+- Location: `src/pocketportal/tools/`
+- Interface: Implements `BaseTool` from `core/interfaces/tool.py`
+
+**Decision Criteria:**
+- ✅ Use a **Tool** if: The functionality is invoked on-demand, completes in finite time, and produces a result
+- ❌ Do NOT use a **Tool** if: The functionality maintains persistent connections, requires continuous operation, or acts as an integration layer
+
+**Examples:**
+- ✅ **Tool**: `QRGenerator` - generates QR code and returns image
+- ✅ **Tool**: `FileCompressor` - compresses files and returns archive
+- ❌ **Not a Tool**: MCP client (persistent connection → Protocol)
+- ❌ **Not a Tool**: Telegram bot (user-facing adapter → Interface)
+
+---
+
+### Protocol
+**Definition:** A persistent or standardized integration that maintains connections, implements communication standards, or provides bidirectional interaction with external systems.
+
+**Characteristics:**
+- Maintains persistent state or connections
+- Implements external protocol specifications (MCP, HTTP long-polling, etc.)
+- Provides abstraction over external system interactions
+- Examples: MCP client/server, approval workflow, resource resolver
+- Location: `src/pocketportal/protocols/`
+- Interface: Typically implements custom protocol-specific interfaces
+
+**Decision Criteria:**
+- ✅ Use a **Protocol** if: The functionality implements a standardized communication protocol, maintains persistent connections, or coordinates complex multi-step workflows
+- ❌ Do NOT use a **Protocol** if: The functionality is a simple one-shot operation or directly handles user interaction
+
+**Examples:**
+- ✅ **Protocol**: `MCPConnector` - persistent MCP client connection
+- ✅ **Protocol**: `ApprovalProtocol` - coordinates human-in-the-loop approval workflow
+- ✅ **Protocol**: `UniversalResourceResolver` - standardized resource access (file://, http://, mcp://)
+- ❌ **Not a Protocol**: Simple HTTP GET request (one-shot → Tool)
+- ❌ **Not a Protocol**: Telegram message handling (user-facing → Interface)
+
+---
+
+### Interface
+**Definition:** A user-facing adapter that translates between external communication channels and the internal agent core.
+
+**Characteristics:**
+- Handles user interaction (receiving input, sending output)
+- Implements `BaseInterface` contract
+- Translates between external format and internal `ProcessingResult`
+- Examples: Telegram bot, Web server, Slack adapter, CLI
+- Location: `src/pocketportal/interfaces/`
+- Interface: Implements `BaseInterface` from `core/interfaces/agent_interface.py`
+
+**Decision Criteria:**
+- ✅ Use an **Interface** if: The functionality directly interacts with end users through a communication channel (chat, web, API, CLI)
+- ❌ Do NOT use an **Interface** if: The functionality is an internal component or doesn't handle user I/O
+
+**Examples:**
+- ✅ **Interface**: `TelegramInterface` - receives/sends Telegram messages
+- ✅ **Interface**: `WebInterface` - serves HTTP/WebSocket endpoints
+- ❌ **Not an Interface**: Job queue (internal component → Core)
+- ❌ **Not an Interface**: Cost tracker (middleware → Middleware)
+
+---
+
+### Classification Guide
+
+When adding new functionality, ask these questions in order:
+
+1. **Does it directly interact with end users?**
+   - YES → **Interface** (e.g., Discord bot, voice assistant)
+   - NO → Continue to question 2
+
+2. **Does it maintain persistent connections or implement a protocol standard?**
+   - YES → **Protocol** (e.g., WebSocket handler, OAuth provider)
+   - NO → Continue to question 3
+
+3. **Does it perform a single, atomic operation?**
+   - YES → **Tool** (e.g., image resizer, calculator, file reader)
+   - NO → Consider **Core Component** or **Middleware**
 
 ---
 
@@ -40,7 +132,7 @@ pocketportal/                       # Repository root
 │       ├── __init__.py            # Package entry point & version
 │       │
 │       ├── core/                  # Core Engine & Orchestration
-│       │   ├── engine.py          # Main agent orchestration
+│       │   ├── agent_core.py      # Main agent orchestration (AgentCore class)
 │       │   ├── context_manager.py # Conversation history
 │       │   ├── event_broker.py    # Event distribution (DAO pattern)
 │       │   ├── event_bus.py       # Real-time event system
@@ -133,19 +225,17 @@ pocketportal/                       # Repository root
 ├── tests/                         # Test Suite
 │   ├── unit/                      # Unit tests (fast, no I/O)
 │   ├── integration/               # Integration tests (Docker, network)
-│   └── e2e/                       # End-to-end tests
+│   └── e2e/                       # End-to-end tests (formerly scripts/verification/)
 │
 ├── docs/                          # Documentation
 │   ├── architecture.md            # This file
 │   ├── setup.md                   # Installation guide
-│   ├── CHANGELOG.md               # Release notes
 │   ├── security/                  # Security documentation
 │   └── archive/                   # Historical documents
 │       ├── HISTORY.md             # Evolution history
 │       └── SETUP_V3.md            # Legacy v3.x setup
 │
-├── scripts/                       # Utility Scripts
-│   └── verification/              # Manual verification tests
+├── scripts/                       # Utility Scripts (optional tooling)
 │
 ├── pyproject.toml                 # Modern Python package config
 └── README.md                      # Project overview
@@ -201,7 +291,7 @@ pocketportal/                       # Repository root
 
 ### Component Descriptions
 
-#### 1. **Core Engine** (`core/engine.py`)
+#### 1. **Core Engine** (`core/agent_core.py`)
 - Orchestrates all agent operations
 - Manages conversation flow
 - Coordinates tool execution
