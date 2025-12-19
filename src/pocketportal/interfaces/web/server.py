@@ -17,6 +17,7 @@ Features:
 
 import asyncio
 import logging
+import os
 from datetime import datetime
 from typing import Dict, Optional
 from pathlib import Path
@@ -30,7 +31,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pocketportal.core import AgentCore, ProcessingResult
 
 # Import existing config
-from pocketportal.config import load_config
+from pocketportal.config.validator import load_and_validate_config
+from pocketportal.observability import (
+    HealthCheckSystem,
+    MetricsCollector,
+    register_health_endpoints,
+    register_metrics_endpoint,
+)
 
 # Setup logging
 logging.basicConfig(
@@ -78,6 +85,11 @@ sessions: Dict[str, Dict] = {}
 # STARTUP/SHUTDOWN
 # ============================================================================
 
+def _env_flag(name: str, default: str = "false") -> bool:
+    """Parse boolean env flags."""
+    return os.getenv(name, default).strip().lower() in {"1", "true", "yes", "on"}
+
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize on startup"""
@@ -109,6 +121,20 @@ async def startup_event():
     
     # Initialize agent core
     agent_core = AgentCore(core_config)
+
+    if _env_flag("ENABLE_HEALTH_CHECKS"):
+        health_system = HealthCheckSystem()
+        register_health_endpoints(app, health_system)
+        logger.info("Observability health endpoints enabled")
+    else:
+        logger.info("Observability health endpoints disabled")
+
+    if _env_flag("ENABLE_METRICS"):
+        metrics = MetricsCollector(service_name="pocketportal-web")
+        register_metrics_endpoint(app, metrics)
+        logger.info("Observability metrics endpoint enabled")
+    else:
+        logger.info("Observability metrics endpoint disabled")
     
     logger.info("=" * 60)
     logger.info("Web interface ready!")

@@ -427,14 +427,15 @@ pip install -e ".[observability]"
 cat >> .env << 'EOF'
 ENABLE_TELEMETRY=true
 ENABLE_METRICS=true
+ENABLE_HEALTH_CHECKS=true
 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
 EOF
 
 # Start with observability
 pocketportal start --interface telegram
 
-# Metrics available at http://localhost:8000/metrics
-# Health checks at http://localhost:8000/health
+# Metrics available at http://localhost:8000/metrics (when ENABLE_METRICS=true)
+# Health checks at http://localhost:8000/health (when ENABLE_HEALTH_CHECKS=true)
 ```
 
 ### 2. Enable MCP (Model Context Protocol)
@@ -755,7 +756,7 @@ pocketportal queue stats
 # View system verification
 pocketportal verify
 
-# View metrics (if observability enabled)
+# View metrics (requires ENABLE_METRICS=true for the web server)
 curl http://localhost:8000/metrics
 
 # Monitor logs (if running in background with nohup)
