@@ -362,30 +362,38 @@ pocketportal start --interface telegram
 # INFO - Starting PocketPortal <version>
 # INFO - Initializing Telegram interface
 # INFO - Bot started: @YourBotName
-# INFO - Loaded 25 tools
+# INFO - Loaded 33 tools
 # INFO - Waiting for messages...
 ```
 
 ### Start Web Interface
 
+**Note:** The web interface currently requires running directly via uvicorn:
+
 ```bash
-# Start PocketPortal with Web interface
-pocketportal start --interface web
+# Start the web interface (FastAPI app)
+uvicorn pocketportal.interfaces.web.server:app --host 0.0.0.0 --port 8000
 
 # You should see:
-# INFO - Starting PocketPortal <version>
-# INFO - Initializing Web interface
-# INFO - Server listening on http://0.0.0.0:8000
-# INFO - WebSocket endpoint: ws://0.0.0.0:8000/ws
+# INFO:     Started server process
+# INFO:     Waiting for application startup.
+# INFO:     Application startup complete.
+# INFO:     Uvicorn running on http://0.0.0.0:8000
 ```
+
+Open your browser and navigate to `http://localhost:8000`
+
+**Why not `pocketportal start --interface web`?**
+The web interface is currently implemented as a standalone FastAPI application, not wrapped in the BaseInterface pattern. This is being tracked for future implementation.
 
 ### Start All Interfaces
 
 ```bash
-# Start all configured interfaces
+# Start all configured interfaces (currently only Telegram)
 pocketportal start --all
 
-# Starts Telegram, Web, and any other enabled interfaces
+# Note: Currently only starts Telegram interface
+# Web interface must be started separately via uvicorn (see above)
 ```
 
 ### Background Mode
@@ -435,10 +443,9 @@ pocketportal start --interface telegram
 # Install MCP support
 pip install -e ".[mcp]"
 
-# Start MCP server
-pocketportal mcp-server --port 3000
-
-# MCP server runs on http://localhost:3000
+# Note: MCP server CLI command not yet implemented
+# MCP server functionality available via Python API
+# See docs/PLUGIN_DEVELOPMENT.md for MCP server setup
 ```
 
 ### 3. Enable Docker Sandboxing
@@ -452,10 +459,12 @@ docker ps
 
 # Enable in configuration
 cat >> .env << 'EOF'
-SANDBOX_ENABLED=true
-SANDBOX_DOCKER_IMAGE=python:3.11-slim
+POCKETPORTAL_SANDBOX_ENABLED=true
+POCKETPORTAL_SANDBOX_TIMEOUT_SECONDS=30
 EOF
 ```
+
+**Note:** Docker image for sandbox is hardcoded in the implementation. Custom image configuration is tracked for future enhancement.
 
 ### 4. Install Additional Models
 
@@ -690,9 +699,9 @@ COPY . /app
 # Install PocketPortal
 RUN pip install -e ".[all]"
 
-# Health check
+# Health check (using verify command)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD pocketportal health || exit 1
+    CMD pocketportal verify || exit 1
 
 # Run application
 CMD ["pocketportal", "start", "--all"]

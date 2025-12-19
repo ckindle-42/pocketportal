@@ -4,7 +4,7 @@ PocketPortal is a modular platform for building conversational interfaces to loc
 
 ## Key Capabilities
 
-- Multiple interface support (Telegram bot, FastAPI web interface, WebSocket)
+- Multiple interface support (Telegram bot via CLI, FastAPI web interface via uvicorn, WebSocket)
 - Modular tool framework with dynamic registration
 - Shared conversation context across interfaces
 - Event-driven architecture with real-time feedback
@@ -25,8 +25,11 @@ pip install -e .
 pocketportal --version
 pocketportal validate-config
 
-# Start an interface
-pocketportal start --interface telegram  # or --interface web, or --all
+# Start Telegram interface
+pocketportal start --interface telegram
+
+# Start web interface (use uvicorn directly)
+uvicorn pocketportal.interfaces.web.server:app --port 8000
 
 # List available tools
 pocketportal list-tools
