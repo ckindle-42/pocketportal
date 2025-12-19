@@ -8,10 +8,19 @@ Validates all configuration values at startup and fails fast with clear error me
 
 from typing import Dict, List, Optional, Any
 from pathlib import Path
+from importlib import metadata
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 from pydantic_settings import BaseSettings
 import yaml
 import os
+
+
+def _project_version() -> str:
+    """Resolve the project version from package metadata."""
+    try:
+        return metadata.version("pocketportal")
+    except metadata.PackageNotFoundError:
+        return "0.0.0-dev"
 
 
 class ModelConfig(BaseModel):
@@ -189,7 +198,7 @@ class Settings(BaseSettings):
 
     # Project metadata
     project_name: str = Field("PocketPortal", description="Project name")
-    version: str = Field("4.1.0", description="Project version")
+    version: str = Field(default_factory=_project_version, description="Project version")
     data_dir: Path = Field(Path("data"), description="Data directory")
     logs_dir: Path = Field(Path("logs"), description="Logs directory")
 
