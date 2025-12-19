@@ -230,6 +230,10 @@ def cmd_list_tools(args):
         print(f"\n{'='*70}")
         print(f"PocketPortal Tools ({loaded} loaded, {failed} failed)")
         print(f"{'='*70}\n")
+        print(
+            "Note: some tool categories require optional extras "
+            "(e.g. pocketportal[data], [documents], [audio], [automation], [knowledge], [security])."
+        )
 
         # Group by category
         for category, tool_names in sorted(registry.tool_categories.items()):
