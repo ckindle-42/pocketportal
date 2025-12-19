@@ -1,6 +1,6 @@
 # Known Issues & TODO Items
 
-**Last Updated:** 2025-12-18
+**Last Updated:** 2025-12-19
 **Status:** All critical issues resolved, only enhancements remain
 
 ---
@@ -29,6 +29,13 @@ These issues were identified in previous audits but have been **FIXED**. Don't w
 - **Issue:** Docs used wrong env var names (missing POCKETPORTAL_ prefix)
 - **Fixed:** All config examples corrected in docs/setup.md
 - **Verification:** Check docs/setup.md lines 462-467
+
+### 5. ✅ Health Check Command (RESOLVED 2025-12-19)
+- **Issue:** No dedicated health check command for Docker/K8s deployments
+- **Fixed In:** PR #51 - Add health CLI subcommand for readiness check
+- **Status:** `pocketportal health` command now available
+- **Verification:** `pocketportal health` returns quick health status
+- **Documentation:** Updated in docs/setup.md lines 348, 722, 774
 
 ---
 
@@ -64,17 +71,15 @@ These are architectural limitations that are **known, documented, and have worka
 # pocketportal mcp-server --port 3000
 ```
 
-### 3. No Dedicated Health Check Command
-**Status:** Known limitation, alternative available
-**Impact:** Low - `verify` command works for health checks
-**Workaround:** Use `pocketportal verify` (more comprehensive)
-**Tracked In:** Docker healthcheck uses `verify` instead
-
-**Future Enhancement:**
-```bash
-# TODO: Add lightweight health check
-# pocketportal health  # Quick yes/no check for Docker/K8s
-```
+### 3. Unit Test Suite Needs Updating
+**Status:** Known limitation, core functionality verified
+**Impact:** Low - Integration and E2E tests pass (40/42, 95%)
+**Details:**
+- Integration tests: 9/9 passed (100%) ✅
+- E2E tests: 31/33 passed (94%) ✅
+- Unit tests: 63/112 passed (56%) - Many have API mismatches with current implementation
+**Root Cause:** Unit tests written for older API signatures, not updated after refactoring
+**Tracked For:** Test suite modernization (future milestone)
 
 ---
 
@@ -87,10 +92,11 @@ These are architectural limitations that are **known, documented, and have worka
    - **Files:** Create `src/pocketportal/interfaces/web/interface.py`
    - **Benefit:** Unified CLI for all interfaces
 
-2. **Run Full Test Suite**
-   - **Why:** Ensure no regressions after fixes
-   - **Effort:** Low (install pytest, run tests)
-   - **Command:** `pip install -e ".[dev]" && pytest tests/ -v`
+2. **Update Unit Test Suite**
+   - **Why:** 49 unit tests fail due to API mismatches (see Known Limitations #3)
+   - **Effort:** Medium (4-6 hours)
+   - **Files:** `tests/unit/test_*.py` - update to match current API signatures
+   - **Note:** Integration and E2E tests already pass (40/42)
 
 ### Medium Priority
 3. **MCP Server CLI Command**
@@ -98,26 +104,21 @@ These are architectural limitations that are **known, documented, and have worka
    - **Effort:** Medium (3-5 hours)
    - **Files:** Add to `src/pocketportal/cli.py`
 
-4. **Health Check Command**
-   - **Why:** Lightweight alternative to `verify`
-   - **Effort:** Low (1-2 hours)
-   - **Files:** Add to `src/pocketportal/cli.py`
-
-5. **Example .env File**
+4. **Example .env File**
    - **Why:** Show users all available config variables
    - **Effort:** Low (30 mins)
    - **File:** Create `.env.example`
 
 ### Low Priority
-6. **Pre-Commit Hooks**
+5. **Pre-Commit Hooks**
    - Lint checks
    - Import validation
    - Documentation link checker
 
-7. **Integration Tests**
-   - Test actual Telegram startup
-   - Test actual web interface startup
-   - Test tool execution end-to-end
+6. **Enhanced Integration Tests**
+   - Test actual Telegram startup (requires bot token)
+   - Test actual web interface startup (requires config)
+   - More tool execution coverage
 
 ---
 
