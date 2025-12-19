@@ -90,36 +90,43 @@ async def start_interface(
         if start_all or interface_type == "all":
             # Start all configured interfaces
             if settings.interfaces.telegram:
-                from pocketportal.interfaces.telegram_interface import TelegramInterface
+                from pocketportal.interfaces.telegram import TelegramInterface
                 telegram = TelegramInterface(secure_agent, settings)
                 manager.register("telegram", telegram)
                 logger.info("Registered Telegram interface")
 
             if settings.interfaces.web:
-                from pocketportal.interfaces.web_interface import WebInterface
-                web = WebInterface(secure_agent, settings)
-                manager.register("web", web)
-                logger.info("Registered Web interface")
+                logger.error("Web interface not yet implemented as BaseInterface")
+                logger.error("Use uvicorn directly: uvicorn pocketportal.interfaces.web.server:app")
+                # TODO: Create WebInterface wrapper class that implements BaseInterface
+                # from pocketportal.interfaces.web import WebInterface
+                # web = WebInterface(secure_agent, settings)
+                # manager.register("web", web)
+                # logger.info("Registered Web interface")
 
         elif interface_type == "telegram":
             if not settings.interfaces.telegram:
                 logger.error("Telegram interface not configured")
                 sys.exit(1)
 
-            from pocketportal.interfaces.telegram_interface import TelegramInterface
+            from pocketportal.interfaces.telegram import TelegramInterface
             telegram = TelegramInterface(secure_agent, settings)
             manager.register("telegram", telegram)
             logger.info("Registered Telegram interface")
 
         elif interface_type == "web":
-            if not settings.interfaces.web:
-                logger.error("Web interface not configured")
-                sys.exit(1)
-
-            from pocketportal.interfaces.web_interface import WebInterface
-            web = WebInterface(secure_agent, settings)
-            manager.register("web", web)
-            logger.info("Registered Web interface")
+            logger.error("Web interface not yet implemented as BaseInterface")
+            logger.error("Use uvicorn directly: uvicorn pocketportal.interfaces.web.server:app --port 8000")
+            logger.error("The web interface is available as a standalone FastAPI app")
+            sys.exit(1)
+            # TODO: Create WebInterface wrapper class that implements BaseInterface
+            # if not settings.interfaces.web:
+            #     logger.error("Web interface not configured")
+            #     sys.exit(1)
+            # from pocketportal.interfaces.web import WebInterface
+            # web = WebInterface(secure_agent, settings)
+            # manager.register("web", web)
+            # logger.info("Registered Web interface")
 
         else:
             logger.error(f"Unknown interface type: {interface_type}")
