@@ -149,6 +149,9 @@ class ToolRegistry:
                         if not hasattr(tool_instance, 'execute'):
                             raise AttributeError(f"Tool {class_name} missing 'execute' method")
 
+                        # Validate metadata contract - emit warnings for legacy formats
+                        self._validate_tool_metadata(tool_instance, class_name, module_path)
+
                         # Register tool
                         tool_name = tool_instance.metadata.name
                         self.tools[tool_name] = tool_instance
@@ -202,6 +205,52 @@ class ToolRegistry:
 
         return loaded, failed
 
+    def _validate_tool_metadata(self, tool_instance: Any, class_name: str, module_path: str) -> None:
+        """
+        Validate tool metadata contract and emit warnings for legacy formats.
+        This ensures tools follow current API standards while maintaining backward compatibility.
+        """
+        metadata = tool_instance.metadata
+
+        # Check 1: Validate parameters field type
+        if hasattr(metadata, 'parameters'):
+            params = metadata.parameters
+
+            # Legacy format detection: dict instead of List[ToolParameter]
+            if isinstance(params, dict):
+                logger.warning(
+                    f"⚠️  LEGACY METADATA FORMAT in {class_name} ({module_path}): "
+                    f"'parameters' is a dict, should be List[ToolParameter]. "
+                    f"This format is deprecated and may be removed in future versions. "
+                    f"See docs/PLUGIN_DEVELOPMENT.md for migration guide."
+                )
+            # Empty list is acceptable
+            elif isinstance(params, list):
+                # Validate each parameter is a ToolParameter instance
+                from pocketportal.core.interfaces.tool import ToolParameter
+                for idx, param in enumerate(params):
+                    if not isinstance(param, ToolParameter):
+                        logger.warning(
+                            f"⚠️  LEGACY PARAMETER FORMAT in {class_name} ({module_path}): "
+                            f"Parameter at index {idx} is not a ToolParameter instance. "
+                            f"Type: {type(param).__name__}. Expected: ToolParameter."
+                        )
+            else:
+                logger.warning(
+                    f"⚠️  INVALID METADATA in {class_name} ({module_path}): "
+                    f"'parameters' field has unexpected type {type(params).__name__}. "
+                    f"Expected: List[ToolParameter]."
+                )
+
+        # Check 2: Validate required metadata fields
+        required_fields = ['name', 'description', 'category']
+        for field in required_fields:
+            if not hasattr(metadata, field):
+                logger.warning(
+                    f"⚠️  INCOMPLETE METADATA in {class_name} ({module_path}): "
+                    f"Missing required field '{field}'."
+                )
+
     def _discover_entry_point_tools(self) -> tuple[int, int]:
         """
         Discover external plugin tools using Python entry_points.
@@ -253,6 +302,9 @@ class ToolRegistry:
 
                     if not hasattr(tool_instance, 'execute'):
                         raise AttributeError(f"Plugin tool {entry_point.name} missing 'execute' method")
+
+                    # Validate metadata contract - emit warnings for legacy formats
+                    self._validate_tool_metadata(tool_instance, entry_point.name, f"plugin:{entry_point.value}")
 
                     # Register tool
                     tool_name = tool_instance.metadata.name

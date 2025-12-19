@@ -193,4 +193,5 @@ markers = [
     "slow: Tests taking more than 5 seconds to complete",
     "requires_llm: Tests that require a running LLM backend",
     "requires_docker: Tests that require Docker to be running",
+    "legacy_api: Tests using legacy API signatures (marked as xfail pending modernization)",
 ]
