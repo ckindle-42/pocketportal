@@ -128,6 +128,21 @@ pip install -e ".[tools,data,documents,audio]"
 # - all: Everything above
 ```
 
+**Tool categories and required extras**
+
+The `pocketportal list-tools` output is grouped by tool category. Use this mapping to install
+the extras needed for each category:
+
+| Tool category | Extra(s) | Notes |
+| --- | --- | --- |
+| utility | `tools`, `documents` | QR/image utilities use `tools`; document conversion utilities use `documents`. |
+| data | `data`, `documents` | Data analysis tools use `data`; Excel processing uses `documents`. |
+| web | (core) | Web/HTTP tools rely on core dependencies. |
+| audio | `audio` | Audio transcription tools. |
+| automation | `automation` | Scheduling and cron tools. |
+| knowledge | `knowledge` | RAG and embedding tools. |
+| dev | `security` | Docker tools require `security`; Git tools use system `git`. |
+
 ### Step 3: Verify Installation
 
 ```bash

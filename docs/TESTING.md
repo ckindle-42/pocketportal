@@ -41,6 +41,21 @@ pip install -e ".[audio]"
 pip install -e ".[all]"
 ```
 
+**Tool categories and required extras**
+
+Unit tests under `tests/unit/tools/` map to the `pocketportal list-tools` categories. Install
+the extras below to cover each category in tests:
+
+| Tool category | Extra(s) | Notes |
+| --- | --- | --- |
+| utility | `tools`, `documents` | QR/image utilities use `tools`; document conversion utilities use `documents`. |
+| data | `data`, `documents` | Data analysis tools use `data`; Excel processing uses `documents`. |
+| web | (core) | Web/HTTP tools rely on core dependencies. |
+| audio | `audio` | Audio transcription tools. |
+| automation | `automation` | Scheduling and cron tools. |
+| knowledge | `knowledge` | RAG and embedding tools. |
+| dev | `security` | Docker tools require `security`; Git tools use system `git`. |
+
 ### Operating System Notes
 
 - **Linux**: All tests should pass without issues
