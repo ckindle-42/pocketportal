@@ -344,11 +344,13 @@ pocketportal validate-config
 ### System Health Check
 
 ```bash
-# Run comprehensive health check
-pocketportal verify
+# Run quick readiness/liveness health check
+pocketportal health
 
 # Expected output shows system status and validation results
 ```
+
+For a comprehensive dependency and system check, run `pocketportal verify`.
 
 ### List Available Tools
 
@@ -715,9 +717,9 @@ COPY . /app
 # Install PocketPortal
 RUN pip install -e ".[all]"
 
-# Health check (using verify command)
+# Health check (using health command)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD pocketportal verify || exit 1
+    CMD pocketportal health || exit 1
 
 # Run application
 CMD ["pocketportal", "start", "--all"]
@@ -768,8 +770,8 @@ docker logs -f pocketportal
 # View queue status
 pocketportal queue stats
 
-# View system verification
-pocketportal verify
+# View system health
+pocketportal health
 
 # View metrics (requires ENABLE_METRICS=true for the web server)
 curl http://localhost:8000/metrics
