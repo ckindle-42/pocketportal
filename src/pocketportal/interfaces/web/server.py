@@ -17,6 +17,7 @@ Features:
 
 import asyncio
 import logging
+import os
 from datetime import datetime
 from typing import Dict, Optional
 from pathlib import Path
@@ -27,10 +28,10 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import the unified core
-from pocketportal.core import AgentCore, ProcessingResult
+from pocketportal.core import AgentCore, ProcessingResult, create_agent_core
 
-# Import existing config
-from pocketportal.config import load_config
+# Import settings configuration
+from pocketportal.config import load_settings
 
 # Setup logging
 logging.basicConfig(
@@ -88,27 +89,40 @@ async def startup_event():
     logger.info("=" * 60)
     
     # Load configuration
-    config = load_and_validate_config()
-    if not config:
-        raise RuntimeError("Invalid configuration")
+    config_path = os.getenv("POCKETPORTAL_CONFIG_PATH")
+    if not config_path:
+        config_dir = os.getenv("POCKETPORTAL_CONFIG_DIR")
+        if config_dir:
+            config_path = str(Path(config_dir) / "config.yaml")
+        else:
+            default_path = Path("~/.config/pocketportal/config.yaml").expanduser()
+            if default_path.exists():
+                config_path = str(default_path)
+
+    if config_path and Path(config_path).exists():
+        settings = load_settings(config_path)
+        logger.info("Configuration loaded from YAML: %s", config_path)
+    else:
+        settings = load_settings()
+        logger.info("Configuration loaded from environment variables")
     
     # Build core config
+    settings_data = settings.model_dump()
+    backends_data = settings.backends.model_dump()
+    model_preferences = settings_data.get('model_preferences') or {}
+    if not isinstance(model_preferences, dict):
+        logger.warning("Ignoring non-dict model_preferences from settings")
+        model_preferences = {}
+
     core_config = {
-        'ollama_base_url': config.ollama_base_url,
-        'lmstudio_base_url': config.lmstudio_base_url,
-        'routing_strategy': config.routing_strategy,
-        'model_preferences': {
-            'trivial': [m.strip() for m in config.model_pref_trivial.split(',') if m.strip()],
-            'simple': [m.strip() for m in config.model_pref_simple.split(',') if m.strip()],
-            'moderate': [m.strip() for m in config.model_pref_moderate.split(',') if m.strip()],
-            'complex': [m.strip() for m in config.model_pref_complex.split(',') if m.strip()],
-            'expert': [m.strip() for m in config.model_pref_expert.split(',') if m.strip()],
-            'code': [m.strip() for m in config.model_pref_code.split(',') if m.strip()]
-        }
+        'ollama_base_url': backends_data.get('ollama_url', 'http://localhost:11434'),
+        'lmstudio_base_url': backends_data.get('lmstudio_base_url', 'http://localhost:1234/v1'),
+        'routing_strategy': settings_data.get('routing_strategy', 'auto'),
+        'model_preferences': model_preferences,
     }
     
     # Initialize agent core
-    agent_core = AgentCore(core_config)
+    agent_core = create_agent_core(core_config)
     
     logger.info("=" * 60)
     logger.info("Web interface ready!")
